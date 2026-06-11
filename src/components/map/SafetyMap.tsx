@@ -1,6 +1,8 @@
 import { useState, useRef, useEffect } from 'react';
-import { Users, Flame, X } from 'lucide-react';
+import { Users, Flame, X, Navigation } from 'lucide-react';
 import type { DangerZone, LiveIncident } from '../../data/store';
+import L from 'leaflet';
+import 'leaflet/dist/leaflet.css';
 
 interface SafetyMapProps {
   userCoords: { lat: number; lng: number };
@@ -20,46 +22,14 @@ export default function SafetyMap({
   interactive = true
 }: SafetyMapProps) {
   const containerRef = useRef<HTMLDivElement>(null);
-  const [dimensions, setDimensions] = useState({ width: 600, height: 400 });
   const [selectedZone, setSelectedZone] = useState<DangerZone | null>(null);
   const [selectedIncident, setSelectedIncident] = useState<LiveIncident | null>(null);
 
-  // Bounds for Ahmedabad plotting
-  const bounds = {
-    north: 23.1200,
-    south: 22.9200,
-    west: 72.4500,
-    east: 72.7000
-  };
-
-  useEffect(() => {
-    if (!containerRef.current) return;
-    const resizeObserver = new ResizeObserver(entries => {
-      for (let entry of entries) {
-        setDimensions({
-          width: Math.max(300, entry.contentRect.width),
-          height: Math.max(250, entry.contentRect.height)
-        });
-      }
-    });
-    resizeObserver.observe(containerRef.current);
-    return () => resizeObserver.disconnect();
-  }, []);
-
-  // Map lat/lng coordinates to SVG x/y canvas pixels
-  const getXY = (lat: number, lng: number) => {
-    const x = ((lng - bounds.west) / (bounds.east - bounds.west)) * dimensions.width;
-    const y = ((bounds.north - lat) / (bounds.north - bounds.south)) * dimensions.height;
-    return { x, y };
-  };
-
-  const getRiskColor = (level: number) => {
-    if (level === 1) return 'rgba(34, 197, 94, 0.4)'; // Green
-    if (level === 2) return 'rgba(132, 204, 22, 0.4)'; // Lime
-    if (level === 3) return 'rgba(245, 158, 11, 0.4)'; // Amber
-    if (level === 4) return 'rgba(239, 68, 68, 0.45)'; // Red
-    return 'rgba(225, 29, 72, 0.6)'; // Crimson/Critical
-  };
+  const mapRef = useRef<L.Map | null>(null);
+  const userMarkerRef = useRef<L.Marker | null>(null);
+  const zoneCirclesRef = useRef<L.Circle[]>([]);
+  const incidentMarkersRef = useRef<L.Marker[]>([]);
+  const lastCenteredCoords = useRef<{ lat: number; lng: number } | null>(null);
 
   const getRiskBorderColor = (level: number) => {
     if (level === 1) return '#22c55e';
@@ -69,264 +39,191 @@ export default function SafetyMap({
     return '#f43f5e';
   };
 
-  // Convert danger zone radius in meters to SVG map pixels
-  const getRadiusInPixels = (radiusMeters: number) => {
-    // 1 degree longitude at Ahmedabad latitude is roughly 102.5 km (102500 meters)
-    const longitudeSpanMeters = (bounds.east - bounds.west) * 102500;
-    const pixelsPerMeter = dimensions.width / longitudeSpanMeters;
-    return radiusMeters * pixelsPerMeter;
-  };
+  // Initialize Map
+  useEffect(() => {
+    if (!containerRef.current) return;
+    if (mapRef.current) return;
 
-  const userPos = getXY(userCoords.lat, userCoords.lng);
+    const map = L.map(containerRef.current, {
+      zoomControl: true,
+      attributionControl: true
+    }).setView([userCoords.lat, userCoords.lng], 14);
 
-  // SVG shapes for Ahmedabad landmarks
-  const renderLandmarks = () => {
-    const riverPoints = [
-      { lat: 23.1200, lng: 72.5800 },
-      { lat: 23.0800, lng: 72.5850 },
-      { lat: 23.0500, lng: 72.5700 },
-      { lat: 23.0200, lng: 72.5600 },
-      { lat: 22.9700, lng: 72.5750 },
-      { lat: 22.9200, lng: 72.5900 }
-    ].map(p => getXY(p.lat, p.lng));
+    mapRef.current = map;
 
-    const pathD = `M ${riverPoints[0].x} ${riverPoints[0].y} ` + 
-      riverPoints.slice(1).map(p => `S ${p.x} ${p.y}, ${p.x} ${p.y}`).join(' ');
+    // Use CartoDB Dark Matter tile layer for a sleek dark theme matching the app aesthetic
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
+      maxZoom: 20
+    }).addTo(map);
 
-    const highwayPoints = [
-      { lat: 23.1200, lng: 72.5400 },
-      { lat: 23.0500, lng: 72.5410 },
-      { lat: 22.9800, lng: 72.5420 },
-      { lat: 22.9200, lng: 72.5600 }
-    ].map(p => getXY(p.lat, p.lng));
+    // Map click handler to clear selected overlays
+    const handleMapClick = () => {
+      setSelectedZone(null);
+      setSelectedIncident(null);
+    };
+    map.on('click', handleMapClick);
 
-    const highwayD = `M ${highwayPoints[0].x} ${highwayPoints[0].y} ` +
-      highwayPoints.slice(1).map(p => `L ${p.x} ${p.y}`).join(' ');
+    return () => {
+      if (mapRef.current) {
+        mapRef.current.off('click', handleMapClick);
+        mapRef.current.remove();
+        mapRef.current = null;
+      }
+    };
+  }, []);
 
-    const vastrapurLake = getXY(23.0338, 72.5250);
-    const ashramRoadStart = getXY(23.0800, 72.5720);
-    const ashramRoadEnd = getXY(22.9800, 72.5730);
+  // Handle Resize/Dimension changes
+  useEffect(() => {
+    if (!containerRef.current) return;
+    const resizeObserver = new ResizeObserver(() => {
+      if (mapRef.current) {
+        mapRef.current.invalidateSize();
+      }
+    });
+    resizeObserver.observe(containerRef.current);
+    return () => resizeObserver.disconnect();
+  }, []);
 
-    return (
-      <g opacity="0.3">
-        {/* Sabarmati River */}
-        <path
-          d={pathD}
-          fill="none"
-          stroke="#1e2e4f"
-          strokeWidth="16"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        />
-        <path
-          d={pathD}
-          fill="none"
-          stroke="#38bdf8"
-          strokeWidth="4"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          opacity="0.6"
-        />
-        {/* SG Highway */}
-        <path
-          d={highwayD}
-          fill="none"
-          stroke="#334155"
-          strokeWidth="2.5"
-          strokeDasharray="4 4"
-        />
-        {/* River Label */}
-        <text
-          x={riverPoints[2].x - 45}
-          y={riverPoints[2].y}
-          fill="#38bdf8"
-          fontSize="9"
-          fontWeight="bold"
-          opacity="0.8"
-          className="font-sans tracking-widest uppercase"
-          transform={`rotate(-75, ${riverPoints[2].x - 45}, ${riverPoints[2].y})`}
-        >
-          Sabarmati River
-        </text>
-        {/* SG Highway Label */}
-        <text
-          x={highwayPoints[1].x - 10}
-          y={highwayPoints[1].y + 30}
-          fill="#94a3b8"
-          fontSize="8"
-          fontWeight="bold"
-          opacity="0.8"
-          className="font-sans tracking-wide"
-          transform={`rotate(-85, ${highwayPoints[1].x - 10}, ${highwayPoints[1].y + 30})`}
-        >
-          SG Highway
-        </text>
-        {/* Vastrapur Lake */}
-        <circle cx={vastrapurLake.x} cy={vastrapurLake.y} r="10" fill="#0284c7" />
-        <text x={vastrapurLake.x + 14} y={vastrapurLake.y + 3} fill="#94a3b8" fontSize="8" fontWeight="bold">Vastrapur</text>
-        {/* Ashram Road */}
-        <line x1={ashramRoadStart.x} y1={ashramRoadStart.y} x2={ashramRoadEnd.x} y2={ashramRoadEnd.y} stroke="#1e293b" strokeWidth="1.5" />
-      </g>
-    );
+  // Update user marker position and auto-center if coordinates shifted significantly (e.g. Teleport)
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+
+    // Custom bright blue pulsing marker matching the app's User location styles
+    const userIcon = L.divIcon({
+      className: 'custom-user-marker-leaflet',
+      html: `
+        <div class="relative flex items-center justify-center" style="width: 32px; height: 32px;">
+          <div class="absolute w-8 h-8 rounded-full bg-blue-500/25 border border-blue-500/40 animate-ping" style="animation-duration: 3s;"></div>
+          <div class="relative w-3.5 h-3.5 rounded-full bg-blue-500 border border-white shadow-lg"></div>
+        </div>
+      `,
+      iconSize: [32, 32],
+      iconAnchor: [16, 16]
+    });
+
+    if (!userMarkerRef.current) {
+      userMarkerRef.current = L.marker([userCoords.lat, userCoords.lng], { icon: userIcon }).addTo(map);
+    } else {
+      userMarkerRef.current.setLatLng([userCoords.lat, userCoords.lng]);
+    }
+
+    const dist = lastCenteredCoords.current
+      ? Math.sqrt(Math.pow(userCoords.lat - lastCenteredCoords.current.lat, 2) + Math.pow(userCoords.lng - lastCenteredCoords.current.lng, 2))
+      : Infinity;
+
+    // Threshold of ~0.0015 degrees (~150m) to trigger auto-centering (prevents snapping during minor drifts/active SOS jitters)
+    if (dist > 0.0015) {
+      map.panTo([userCoords.lat, userCoords.lng]);
+      lastCenteredCoords.current = userCoords;
+    }
+  }, [userCoords]);
+
+  // Update Danger Zone geofences
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+
+    // Clear old zone circles
+    zoneCirclesRef.current.forEach(c => c.remove());
+    zoneCirclesRef.current = [];
+
+    // Redraw zones
+    dangerZones.forEach(zone => {
+      const color = getRiskBorderColor(zone.risk_level);
+      const isSelected = selectedZone?.id === zone.id;
+
+      const circle = L.circle([zone.center_lat, zone.center_lng], {
+        radius: zone.radius_meters,
+        color: color,
+        fillColor: color,
+        fillOpacity: showHeatmap ? 0.45 : (isSelected ? 0.35 : 0.18),
+        weight: isSelected ? 3 : 1.5,
+      }).addTo(map);
+
+      if (interactive) {
+        circle.on('click', (e) => {
+          L.DomEvent.stopPropagation(e);
+          setSelectedZone(zone);
+          setSelectedIncident(null);
+        });
+      }
+
+      zoneCirclesRef.current.push(circle);
+    });
+  }, [dangerZones, selectedZone, interactive]);
+
+  // Update Active SOS Incident Pins
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+
+    // Clear old incident markers
+    incidentMarkersRef.current.forEach(m => m.remove());
+    incidentMarkersRef.current = [];
+
+    // Redraw incidents
+    incidents.forEach(inc => {
+      if (inc.status === 'resolved') return;
+
+      const isResponding = inc.status === 'responding';
+      const isSelected = selectedIncident?.id === inc.id;
+      const sizeClass = isSelected ? 'w-10 h-10' : 'w-7.5 h-7.5';
+      const badgeSizeClass = isSelected ? 'w-6 h-6 text-xs' : 'w-5.5 h-5.5 text-[10px]';
+
+      const incidentIcon = L.divIcon({
+        className: 'custom-incident-marker-leaflet',
+        html: `
+          <div class="relative flex items-center justify-center" style="width: 40px; height: 40px;">
+            <div class="absolute ${sizeClass} rounded-full ${isResponding ? 'bg-amber-500/25 border border-amber-500/40' : 'bg-red-500/25 border border-red-500/40'} animate-ping" style="animation-duration: 2s;"></div>
+            <div class="relative ${badgeSizeClass} rounded-full ${isResponding ? 'bg-amber-500' : 'bg-red-500'} border border-white flex items-center justify-center text-white shadow-xl">
+              ${isResponding ? '⚠️' : '🚨'}
+            </div>
+          </div>
+        `,
+        iconSize: [40, 40],
+        iconAnchor: [20, 20]
+      });
+
+      const marker = L.marker([inc.latitude, inc.longitude], { icon: incidentIcon }).addTo(map);
+
+      if (interactive) {
+        marker.on('click', (e) => {
+          L.DomEvent.stopPropagation(e);
+          setSelectedIncident(inc);
+          setSelectedZone(null);
+        });
+      }
+
+      incidentMarkersRef.current.push(marker);
+    });
+  }, [incidents, selectedIncident, interactive]);
+
+  const handleRecenter = () => {
+    if (mapRef.current) {
+      mapRef.current.setView([userCoords.lat, userCoords.lng], 15);
+      lastCenteredCoords.current = userCoords;
+    }
   };
 
   return (
-    <div ref={containerRef} className="w-full h-full relative overflow-hidden bg-slate-950/60 flex flex-col">
-      {/* Visual map layer */}
-      <svg className="flex-1 w-full h-full select-none" viewBox={`0 0 ${dimensions.width} ${dimensions.height}`}>
-        {/* Grid pattern overlay */}
-        <defs>
-          <pattern id="mapGrid" width="30" height="30" patternUnits="userSpaceOnUse">
-            <path d="M 30 0 L 0 0 0 30" fill="none" stroke="rgba(51, 65, 85, 0.12)" strokeWidth="0.8" />
-          </pattern>
-        </defs>
-        <rect width="100%" height="100%" fill="url(#mapGrid)" />
+    <div className="w-full h-full relative overflow-hidden bg-slate-950/60 flex flex-col">
+      {/* Map rendering layer */}
+      <div ref={containerRef} className="flex-1 w-full h-full z-10" />
 
-        {/* Major geographical landmarks */}
-        {renderLandmarks()}
+      {/* Recenter Button */}
+      <button
+        onClick={handleRecenter}
+        className="absolute top-3 right-3 bg-slate-900/95 backdrop-blur border border-slate-800 rounded-xl p-2.5 text-slate-350 hover:text-white transition-all hover:bg-slate-800 shadow-xl z-[1000] cursor-pointer"
+        title="Recenter Map on GPS"
+      >
+        <Navigation className="w-4 h-4 rotate-45" />
+      </button>
 
-        {/* Heatmap Overlay Simulation */}
-        {showHeatmap && (
-          <g opacity="0.6">
-            {dangerZones.map(zone => {
-              const pos = getXY(zone.center_lat, zone.center_lng);
-              const r = getRadiusInPixels(zone.radius_meters) * 1.5;
-              return (
-                <circle
-                  key={`heat-${zone.id}`}
-                  cx={pos.x}
-                  cy={pos.y}
-                  r={r}
-                  fill={`url(#grad-${zone.id})`}
-                />
-              );
-            })}
-            <defs>
-              {dangerZones.map(zone => {
-                const color = getRiskBorderColor(zone.risk_level);
-                return (
-                  <radialGradient id={`grad-${zone.id}`} key={`def-${zone.id}`}>
-                    <stop offset="0%" stopColor={color} stopOpacity="0.45" />
-                    <stop offset="50%" stopColor={color} stopOpacity="0.15" />
-                    <stop offset="100%" stopColor={color} stopOpacity="0" />
-                  </radialGradient>
-                );
-              })}
-            </defs>
-          </g>
-        )}
-
-        {/* Shaded Danger Geofences */}
-        {dangerZones.map(zone => {
-          const pos = getXY(zone.center_lat, zone.center_lng);
-          const r = getRadiusInPixels(zone.radius_meters);
-          const isSelected = selectedZone?.id === zone.id;
-          
-          return (
-            <g key={zone.id} className="cursor-pointer">
-              {/* Pulsing glow ring for level 4/5 zones */}
-              {zone.risk_level >= 4 && (
-                <circle
-                  cx={pos.x}
-                  cy={pos.y}
-                  r={r}
-                  fill="none"
-                  stroke={getRiskBorderColor(zone.risk_level)}
-                  strokeWidth="1.5"
-                  className="animate-ping"
-                  style={{ animationDuration: zone.risk_level === 5 ? '2.5s' : '4s', opacity: 0.15 }}
-                />
-              )}
-              {/* Outer geofence boundary */}
-              <circle
-                cx={pos.x}
-                cy={pos.y}
-                r={r}
-                fill={getRiskColor(zone.risk_level)}
-                stroke={getRiskBorderColor(zone.risk_level)}
-                strokeWidth={isSelected ? '2.5' : '1.2'}
-                opacity={isSelected ? 0.95 : 0.8}
-                onClick={() => {
-                  if (interactive) {
-                    setSelectedZone(zone);
-                    setSelectedIncident(null);
-                  }
-                }}
-                className="transition-all hover:opacity-100"
-              />
-            </g>
-          );
-        })}
-
-        {/* SOS Incident Pins */}
-        {incidents.map(inc => {
-          if (inc.status === 'resolved') return null;
-          const pos = getXY(inc.latitude, inc.longitude);
-          const isSelected = selectedIncident?.id === inc.id;
-          const isResponding = inc.status === 'responding';
-          
-          return (
-            <g 
-              key={inc.id} 
-              className="cursor-pointer"
-              onClick={() => {
-                if (interactive) {
-                  setSelectedIncident(inc);
-                  setSelectedZone(null);
-                }
-              }}
-            >
-              {/* Ring pulse */}
-              <circle
-                cx={pos.x}
-                cy={pos.y}
-                r={isSelected ? 22 : 14}
-                fill="none"
-                stroke={isResponding ? '#f59e0b' : '#ef4444'}
-                strokeWidth="2"
-                className="animate-ping"
-              />
-              {/* Pin body */}
-              <circle
-                cx={pos.x}
-                cy={pos.y}
-                r={isSelected ? 9 : 6.5}
-                fill={isResponding ? '#f59e0b' : '#ef4444'}
-                stroke="#ffffff"
-                strokeWidth="1.5"
-                className="shadow-lg"
-              />
-            </g>
-          );
-        })}
-
-        {/* User Current Position (Blue pulse) */}
-        <g>
-          <circle
-            cx={userPos.x}
-            cy={userPos.y}
-            r="16"
-            fill="none"
-            stroke="#3b82f6"
-            strokeWidth="1.5"
-            className="animate-ping"
-            style={{ animationDuration: '3s' }}
-          />
-          <circle
-            cx={userPos.x}
-            cy={userPos.y}
-            r="6"
-            fill="#3b82f6"
-            stroke="#ffffff"
-            strokeWidth="1.5"
-            className="shadow-lg"
-          />
-        </g>
-      </svg>
-
-      {/* Floating Info Panels (Glassmorphism overlay) */}
+      {/* Floating Info Panels (Glassmorphism overlay on top of Leaflet Z-indices) */}
       {selectedZone && (
-        <div className="absolute bottom-3 left-3 right-3 bg-slate-900/90 backdrop-blur border border-slate-800 rounded-xl p-3.5 shadow-2xl flex flex-col gap-2 z-30 max-w-sm">
+        <div className="absolute bottom-16 left-3 right-3 bg-slate-900/95 backdrop-blur border border-slate-800 rounded-xl p-3.5 shadow-2xl flex flex-col gap-2 z-[1000] max-w-sm">
           <div className="flex justify-between items-start">
             <div>
               <span className={`text-[8.5px] px-2 py-0.5 rounded border font-extrabold uppercase tracking-wide ${
@@ -370,7 +267,7 @@ export default function SafetyMap({
       )}
 
       {selectedIncident && (
-        <div className="absolute bottom-3 left-3 right-3 bg-slate-900/90 backdrop-blur border border-slate-800 rounded-xl p-3.5 shadow-2xl flex flex-col gap-2 z-30 max-w-sm">
+        <div className="absolute bottom-16 left-3 right-3 bg-slate-900/95 backdrop-blur border border-slate-800 rounded-xl p-3.5 shadow-2xl flex flex-col gap-2 z-[1000] max-w-sm">
           <div className="flex justify-between items-start">
             <div className="flex items-center gap-1.5">
               <Flame className="w-4.5 h-4.5 text-brand-red animate-pulse" />

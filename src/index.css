@@ -92,3 +92,34 @@
 ::-webkit-scrollbar-thumb:hover {
   background: #334155;
 }
+
+/* Leaflet dark theme styling overrides */
+.leaflet-container {
+  background: #060913 !important;
+}
+
+.leaflet-bar {
+  border: 1px solid #1e293b !important;
+  box-shadow: none !important;
+}
+
+.leaflet-bar a {
+  background-color: #121824 !important;
+  color: #94a3b8 !important;
+  border-bottom: 1px solid #1e293b !important;
+}
+
+.leaflet-bar a:hover {
+  background-color: #1e293b !important;
+  color: #ffffff !important;
+}
+
+.leaflet-control-attribution {
+  background-color: rgba(6, 9, 19, 0.8) !important;
+  color: #64748b !important;
+}
+
+.leaflet-control-attribution a {
+  color: #3b82f6 !important;
+}
+
