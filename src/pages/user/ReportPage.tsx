@@ -6,10 +6,13 @@ import {
   UploadCloud, FileCheck, Bot, Trash, ShieldCheck 
 } from 'lucide-react';
 import { cybercrimeCategories, getProfileScanResult } from '../../data/mockData';
-import { store } from '../../data/store';
+import { store, useUserProfile } from '../../data/store';
+import { t } from '../../data/translations';
 
 export default function ReportPage() {
   const navigate = useNavigate();
+  const [profile] = useUserProfile();
+  const lang = (profile.lang || 'en') as 'en' | 'hi' | 'gu';
   const [step, setStep] = useState(1);
   
   // Form States
@@ -122,15 +125,15 @@ export default function ReportPage() {
     <div className="space-y-6">
       {/* Page Header */}
       <div>
-        <h2 className="font-display font-bold text-2xl text-white">Report Cybercrime</h2>
+        <h2 className="font-display font-bold text-2xl text-white">{t('report_cybercrime', lang)}</h2>
         <div className="flex justify-between items-center text-xs text-slate-500 mt-1">
-          <span>Step {step} of 5</span>
+          <span>{t('step_of_5', lang).replace('{{step}}', String(step))}</span>
           <span className="font-semibold text-brand-red">
-            {step === 1 && 'Incident Category'}
-            {step === 2 && 'Incident Details'}
-            {step === 3 && 'Evidence Safe'}
-            {step === 4 && 'Suspect Directory'}
-            {step === 5 && 'Consent & File'}
+            {step === 1 && t('step_1', lang)}
+            {step === 2 && t('step_2', lang)}
+            {step === 3 && t('step_3', lang)}
+            {step === 4 && t('step_4', lang)}
+            {step === 5 && t('step_5', lang)}
           </span>
         </div>
 
@@ -150,7 +153,7 @@ export default function ReportPage() {
       {/* STEP 1: CATEGORY SELECTION */}
       {step === 1 && (
         <div className="space-y-4">
-          <h3 className="text-sm font-semibold text-slate-300">Select incident category:</h3>
+          <h3 className="text-sm font-semibold text-slate-300">{t('select_category', lang)}</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
             {cybercrimeCategories.map((cat) => {
               const Icon = getCategoryIcon(cat.id);
@@ -189,7 +192,7 @@ export default function ReportPage() {
               disabled={!category}
               className="bg-brand-red hover:bg-brand-red-dark disabled:bg-brand-red/50 text-white font-semibold py-2.5 px-6 rounded-xl flex items-center gap-2 text-xs uppercase tracking-wider transition-colors cursor-pointer"
             >
-              <span>Continue</span>
+              <span>{t('continue_btn', lang)}</span>
               <ArrowRight className="w-4 h-4" />
             </button>
           </div>
@@ -202,7 +205,7 @@ export default function ReportPage() {
           <div className="bg-dark-card border border-slate-900 rounded-xl p-4 space-y-4">
             <div>
               <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">
-                Incident Occurrence Date
+                {t('incident_date', lang)}
               </label>
               <input
                 type="date"
@@ -216,7 +219,7 @@ export default function ReportPage() {
             <div>
               <div className="flex justify-between items-center mb-2">
                 <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider">
-                  Detailed Narrative Description
+                  {t('detailed_narrative', lang)}
                 </label>
                 <button
                   type="button"
@@ -225,7 +228,7 @@ export default function ReportPage() {
                   className="flex items-center gap-1.5 px-2.5 py-1 rounded bg-slate-900 border border-slate-800 text-[10px] text-emerald-400 font-semibold uppercase tracking-wider hover:bg-slate-950 transition-colors"
                 >
                   <Bot className="w-3.5 h-3.5" />
-                  <span>{aiDrafting ? 'Drafting...' : 'AI Assist'}</span>
+                  <span>{aiDrafting ? t('drafting', lang) : t('ai_assist', lang)}</span>
                 </button>
               </div>
               <textarea
@@ -248,14 +251,14 @@ export default function ReportPage() {
               className="bg-slate-900 hover:bg-slate-850 text-slate-400 border border-slate-800 font-semibold py-2.5 px-4 rounded-xl flex items-center gap-2 text-xs uppercase tracking-wider transition-colors cursor-pointer"
             >
               <ArrowLeft className="w-4 h-4" />
-              <span>Back</span>
+              <span>{t('back_btn', lang)}</span>
             </button>
             <button
               onClick={() => setStep(3)}
               disabled={description.length < 10 || !incidentDate}
               className="bg-brand-red hover:bg-brand-red-dark disabled:bg-brand-red/50 text-white font-semibold py-2.5 px-6 rounded-xl flex items-center gap-2 text-xs uppercase tracking-wider transition-colors cursor-pointer"
             >
-              <span>Continue</span>
+              <span>{t('continue_btn', lang)}</span>
               <ArrowRight className="w-4 h-4" />
             </button>
           </div>
@@ -266,7 +269,7 @@ export default function ReportPage() {
       {step === 3 && (
         <div className="space-y-4">
           <div className="bg-dark-card border border-slate-900 rounded-xl p-4 space-y-4">
-            <h4 className="text-xs font-semibold text-slate-300 uppercase tracking-wider">Upload Cyber Evidence Files</h4>
+            <h4 className="text-xs font-semibold text-slate-300 uppercase tracking-wider">{t('upload_evidence', lang)}</h4>
             
             {/* Drag & Drop Area */}
             <div className="relative border-2 border-dashed border-slate-800 hover:border-brand-red/50 rounded-xl p-6 flex flex-col items-center justify-center text-center cursor-pointer transition-colors bg-slate-950/20">
@@ -278,21 +281,21 @@ export default function ReportPage() {
                 className="absolute inset-0 opacity-0 cursor-pointer"
               />
               <UploadCloud className="w-10 h-10 text-slate-500 mb-2 animate-bounce" />
-              <span className="text-xs font-bold text-slate-350">Drag screenshots or PDF files here</span>
-              <span className="text-[9px] text-slate-600 mt-1">Accepts PNG, JPG, PDF up to 50MB</span>
+              <span className="text-xs font-bold text-slate-350">{t('drag_screenshots', lang)}</span>
+              <span className="text-[9px] text-slate-600 mt-1">{t('accepts_files', lang)}</span>
             </div>
 
             {uploading && (
               <div className="flex items-center justify-center gap-2.5 text-xs text-brand-red font-medium py-3 border border-slate-900/60 rounded-xl bg-slate-950/40">
                 <span className="w-4 h-4 rounded-full border-2 border-brand-red border-t-transparent animate-spin" />
-                <span>Hashing & encrypting upload in progress...</span>
+                <span>{t('hashing_progress', lang)}</span>
               </div>
             )}
 
             {/* Evidence List */}
             {evidenceFiles.length > 0 && (
               <div className="space-y-2.5 pt-2">
-                <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Uploaded Evidence Checklist</span>
+                <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">{t('uploaded_checklist', lang)}</span>
                 {evidenceFiles.map((file) => (
                   <div key={file.id} className="bg-slate-900/60 border border-slate-850/80 rounded-xl p-3 flex justify-between items-center">
                     <div className="flex items-start gap-3">
@@ -322,13 +325,13 @@ export default function ReportPage() {
               className="bg-slate-900 hover:bg-slate-850 text-slate-400 border border-slate-800 font-semibold py-2.5 px-4 rounded-xl flex items-center gap-2 text-xs uppercase tracking-wider transition-colors cursor-pointer"
             >
               <ArrowLeft className="w-4 h-4" />
-              <span>Back</span>
+              <span>{t('back_btn', lang)}</span>
             </button>
             <button
               onClick={() => setStep(4)}
               className="bg-brand-red hover:bg-brand-red-dark text-white font-semibold py-2.5 px-6 rounded-xl flex items-center gap-2 text-xs uppercase tracking-wider transition-colors cursor-pointer"
             >
-              <span>Continue</span>
+              <span>{t('continue_btn', lang)}</span>
               <ArrowRight className="w-4 h-4" />
             </button>
           </div>
@@ -339,12 +342,12 @@ export default function ReportPage() {
       {step === 4 && (
         <div className="space-y-4">
           <div className="bg-dark-card border border-slate-900 rounded-xl p-4 space-y-4">
-            <h4 className="text-xs font-semibold text-slate-300 uppercase tracking-wider">Suspect Platform Details</h4>
+            <h4 className="text-xs font-semibold text-slate-300 uppercase tracking-wider">{t('suspect_platform', lang)}</h4>
             
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <label className="block text-[10px] text-slate-400 font-semibold uppercase tracking-wider mb-1">
-                  Social Platform
+                  {t('social_platform', lang)}
                 </label>
                 <select
                   value={suspectInfo.platform}
@@ -361,7 +364,7 @@ export default function ReportPage() {
 
               <div>
                 <label className="block text-[10px] text-slate-400 font-semibold uppercase tracking-wider mb-1">
-                  Username/Handle
+                  {t('username_handle', lang)}
                 </label>
                 <input
                   type="text"
@@ -375,7 +378,7 @@ export default function ReportPage() {
 
             <div>
               <label className="block text-[10px] text-slate-400 font-semibold uppercase tracking-wider mb-1">
-                Profile Link/URL
+                {t('profile_link', lang)}
               </label>
               <div className="flex gap-2">
                 <input
@@ -391,7 +394,7 @@ export default function ReportPage() {
                   disabled={!suspectInfo.url || scanningProfile}
                   className="bg-slate-900 hover:bg-slate-850 text-slate-350 border border-slate-800 py-2 px-3.5 rounded-lg text-xs font-semibold cursor-pointer"
                 >
-                  {scanningProfile ? 'Scanning...' : 'Scan Profile'}
+                  {scanningProfile ? t('scanning', lang) : t('scan_profile', lang)}
                 </button>
               </div>
             </div>
@@ -420,13 +423,13 @@ export default function ReportPage() {
               className="bg-slate-900 hover:bg-slate-850 text-slate-400 border border-slate-800 font-semibold py-2.5 px-4 rounded-xl flex items-center gap-2 text-xs uppercase tracking-wider transition-colors cursor-pointer"
             >
               <ArrowLeft className="w-4 h-4" />
-              <span>Back</span>
+              <span>{t('back_btn', lang)}</span>
             </button>
             <button
               onClick={() => setStep(5)}
               className="bg-brand-red hover:bg-brand-red-dark text-white font-semibold py-2.5 px-6 rounded-xl flex items-center gap-2 text-xs uppercase tracking-wider transition-colors cursor-pointer"
             >
-              <span>Continue</span>
+              <span>{t('continue_btn', lang)}</span>
               <ArrowRight className="w-4 h-4" />
             </button>
           </div>
@@ -469,7 +472,7 @@ export default function ReportPage() {
                   className="mt-0.5 accent-brand-red cursor-pointer"
                 />
                 <span className="leading-relaxed">
-                  I consent to sharing my uploaded evidence and hash logs securely with the Ahmedabad Cyber Crime Cell.
+                  {t('consent_share', lang)}
                 </span>
               </label>
 
@@ -481,7 +484,7 @@ export default function ReportPage() {
                   className="mt-0.5 accent-brand-red cursor-pointer"
                 />
                 <span className="leading-relaxed">
-                  Generate an AI draft FIR report automatically for reviewing in the inspector queue.
+                  {t('generate_fir', lang)}
                 </span>
               </label>
             </div>
@@ -494,14 +497,14 @@ export default function ReportPage() {
               className="bg-slate-900 hover:bg-slate-850 text-slate-400 border border-slate-800 font-semibold py-2.5 px-4 rounded-xl flex items-center gap-2 text-xs uppercase tracking-wider transition-colors cursor-pointer"
             >
               <ArrowLeft className="w-4 h-4" />
-              <span>Back</span>
+              <span>{t('back_btn', lang)}</span>
             </button>
             <button
               type="submit"
               disabled={!consent}
               className="bg-brand-red hover:bg-brand-red-dark disabled:bg-brand-red/50 text-white font-semibold py-2.5 px-6 rounded-xl flex items-center gap-2 text-xs uppercase tracking-wider transition-colors cursor-pointer"
             >
-              <span>Submit Complaint</span>
+              <span>{t('submit_complaint', lang)}</span>
               <ShieldCheck className="w-4 h-4" />
             </button>
           </div>

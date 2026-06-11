@@ -3,39 +3,41 @@ import { ShieldAlert, Globe, FileText, Users, ArrowRight, BellRing } from 'lucid
 import SOSButton from '../../components/sos/SOSButton';
 import ActiveSOSOverlay from '../../components/sos/ActiveSOSOverlay';
 import { useActiveSOS, useUserProfile, store } from '../../data/store';
+import { t } from '../../data/translations';
 
 export default function HomePage() {
   const navigate = useNavigate();
   const { activeSOS } = useActiveSOS();
   const [profile] = useUserProfile();
+  const lang = (profile.lang || 'en') as 'en' | 'hi' | 'gu';
   const sosActive = !!activeSOS;
 
   const quickActions = [
     { 
       path: '/report', 
-      title: 'Report Cybercrime', 
-      desc: 'Stalking, blackmail, online scams', 
+      title: t('quick_action_report_title', lang), 
+      desc: t('quick_action_report_desc', lang), 
       icon: ShieldAlert, 
       color: 'text-red-500 bg-red-500/10 border-red-500/20' 
     },
     { 
       path: '/safety-hub', 
-      title: 'Safety Hub', 
-      desc: 'Scan links & fake profile alerts', 
+      title: t('quick_action_safety_title', lang), 
+      desc: t('quick_action_safety_desc', lang), 
       icon: Globe, 
       color: 'text-emerald-500 bg-emerald-500/10 border-emerald-500/20' 
     },
     { 
       path: '/complaints', 
-      title: 'Track Complaints', 
-      desc: 'View status & chat with officers', 
+      title: t('quick_action_track_title', lang), 
+      desc: t('quick_action_track_desc', lang), 
       icon: FileText, 
       color: 'text-blue-500 bg-blue-500/10 border-blue-500/20' 
     },
     { 
       path: '/guardians', 
-      title: 'Guardians', 
-      desc: 'Configure emergency alerts', 
+      title: t('quick_action_guardians_title', lang), 
+      desc: t('quick_action_guardians_desc', lang), 
       icon: Users, 
       color: 'text-amber-500 bg-amber-500/10 border-amber-500/20' 
     }
@@ -60,9 +62,9 @@ export default function HomePage() {
       {/* Greeting and Status Panel */}
       <div className="bg-dark-card border border-slate-900 rounded-2xl p-4 flex items-center justify-between">
         <div>
-          <h2 className="font-display font-bold text-xl text-white">Hello, {profile.name} 👋</h2>
+          <h2 className="font-display font-bold text-xl text-white">{t('hello', lang)}{profile.name} 👋</h2>
           <p className="text-xs text-slate-500 mt-1">
-            Status: <span className="text-emerald-400 font-semibold">Secure</span> • Safeguard Enabled
+            {t('status_secure_prefix', lang)}<span className="text-emerald-400 font-semibold">{t('status_secure', lang)}</span> {t('safeguard_enabled', lang)}
           </p>
         </div>
         <div className="w-10 h-10 rounded-full bg-slate-900 border border-slate-800 flex items-center justify-center text-slate-400">
@@ -75,10 +77,10 @@ export default function HomePage() {
         <div className="md:col-span-5 flex flex-col">
           <div className="bg-dark-card border border-slate-900 rounded-2xl p-6 flex flex-col items-center justify-center text-center flex-1 min-h-[300px]">
             <h3 className="font-display font-semibold text-sm text-slate-400 uppercase tracking-widest mb-1">
-              Emergency Trigger
+              {t('emergency_trigger_title', lang)}
             </h3>
             <p className="text-xs text-slate-650 mb-6 max-w-[285px] leading-relaxed">
-              Press and hold for 3 seconds during immediate threat to alert the police cyber branch & guardians.
+              {t('emergency_trigger_desc', lang)}
             </p>
             <SOSButton onTrigger={handleSosTrigger} isActive={sosActive} />
           </div>
@@ -88,7 +90,7 @@ export default function HomePage() {
         <div className="md:col-span-7 space-y-6">
           <div className="space-y-3">
             <h3 className="font-display font-semibold text-xs text-slate-500 uppercase tracking-wider px-1">
-              Safety Actions
+              {t('safety_actions_title', lang)}
             </h3>
             <div className="grid grid-cols-2 gap-3">
               {quickActions.map((act) => {
@@ -123,8 +125,8 @@ export default function HomePage() {
                 <ShieldAlert className="w-4.5 h-4.5" />
               </div>
               <div className="text-left">
-                <h4 className="text-xs font-bold text-slate-200">Stalking Case #SH-8902</h4>
-                <p className="text-[10px] text-slate-500 mt-0.5">Assigned to Officer M. Patel • Investigating</p>
+                <h4 className="text-xs font-bold text-slate-200">{t('recent_activity_title', lang)}</h4>
+                <p className="text-[10px] text-slate-500 mt-0.5">{t('recent_activity_desc', lang)}</p>
               </div>
             </div>
             <ArrowRight className="w-4 h-4 text-slate-500" />

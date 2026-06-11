@@ -1,10 +1,13 @@
 import { useNavigate } from 'react-router-dom';
 import { FileText, ChevronRight, Clock, ShieldCheck } from 'lucide-react';
-import { useComplaints } from '../../data/store';
+import { useComplaints, useUserProfile } from '../../data/store';
+import { t } from '../../data/translations';
 
 export default function MyComplaintsPage() {
   const navigate = useNavigate();
   const complaints = useComplaints();
+  const [profile] = useUserProfile();
+  const lang = (profile.lang || 'en') as 'en' | 'hi' | 'gu';
 
   const getStatusStyle = (status: string) => {
     switch (status) {
@@ -30,9 +33,9 @@ export default function MyComplaintsPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="font-display font-bold text-2xl text-white">Your Cases</h2>
+        <h2 className="font-display font-bold text-2xl text-white">{t('my_complaints_title', lang)}</h2>
         <p className="text-xs text-slate-500 mt-1">
-          Review progress, evidence hash sheets, and chat with assigned investigators
+          {t('my_complaints_desc', lang)}
         </p>
       </div>
 

@@ -1,10 +1,12 @@
 import { useNavigate } from 'react-router-dom';
 import { User, ShieldCheck, HelpCircle, LogOut, ChevronRight, Globe } from 'lucide-react';
 import { useUserProfile } from '../../data/store';
+import { t } from '../../data/translations';
 
 export default function ProfilePage() {
   const navigate = useNavigate();
   const [profile, setProfile] = useUserProfile();
+  const lang = (profile.lang || 'en') as 'en' | 'hi' | 'gu';
 
   const getInitials = (name: string) => {
     return name
@@ -25,9 +27,9 @@ export default function ProfilePage() {
     <div className="space-y-6">
       {/* Page Header */}
       <div>
-        <h2 className="font-display font-bold text-2xl text-white">Your Profile</h2>
+        <h2 className="font-display font-bold text-2xl text-white">{t('profile_title', lang)}</h2>
         <p className="text-xs text-slate-500 mt-1">
-          Manage identity security links and app preferences
+          {t('profile_desc', lang)}
         </p>
       </div>
 
@@ -43,11 +45,11 @@ export default function ProfilePage() {
           {profile.aadhaar ? (
             <div className="flex items-center gap-1 text-[10px] text-emerald-400 font-semibold bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-full mt-1.5 w-fit">
               <ShieldCheck className="w-3.5 h-3.5" />
-              <span>AADHAAR LINKED</span>
+              <span>{t('aadhaar_linked', lang)}</span>
             </div>
           ) : (
             <div className="flex items-center gap-1 text-[10px] text-slate-500 font-semibold bg-slate-905 border border-slate-900 px-2 py-0.5 rounded-full mt-1.5 w-fit">
-              <span>UNLINKED PROFILE</span>
+              <span>{t('unlinked_profile', lang)}</span>
             </div>
           )}
         </div>
@@ -56,9 +58,9 @@ export default function ProfilePage() {
       {/* Settings Options */}
       <div className="bg-dark-card border border-slate-900 rounded-2xl overflow-hidden divide-y divide-slate-900">
         {[
-          { label: 'Guardians Configuration', desc: 'Alert priority and test SMS signals', path: '/guardians', icon: User },
-          { label: 'Language Selection', desc: `Current: ${currentLangLabel}`, path: '', icon: Globe },
-          { label: 'Cyber Help Center', desc: 'Safety tips and Ahmedabad Cell protocols', path: '/safety-hub', icon: HelpCircle }
+          { label: t('guardians_config', lang), desc: t('guardians_config_desc', lang), path: '/guardians', icon: User },
+          { label: t('language_selection', lang), desc: `${t('language_current', lang)}${currentLangLabel}`, path: '', icon: Globe },
+          { label: t('cyber_help_center', lang), desc: t('cyber_help_center_desc', lang), path: '/safety-hub', icon: HelpCircle }
         ].map((opt, idx) => {
           const Icon = opt.icon;
           return (
@@ -88,7 +90,7 @@ export default function ProfilePage() {
           onClick={() => navigate('/police/login')}
           className="w-full bg-slate-950 border border-slate-900 hover:border-slate-800 text-slate-400 font-semibold py-3 px-4 rounded-xl flex items-center justify-center gap-2 transition-all text-xs uppercase tracking-wider cursor-pointer"
         >
-          <span>👮 Enter Police Officer Portal</span>
+          <span>{t('police_portal_btn', lang)}</span>
         </button>
 
         <button
@@ -99,7 +101,7 @@ export default function ProfilePage() {
           className="w-full bg-red-500/10 border border-red-500/20 hover:bg-red-500/20 text-brand-red font-semibold py-3 px-4 rounded-xl flex items-center justify-center gap-2 transition-all text-xs uppercase tracking-wider cursor-pointer"
         >
           <LogOut className="w-4 h-4" />
-          <span>Log Out</span>
+          <span>{t('logout_btn', lang)}</span>
         </button>
       </div>
     </div>

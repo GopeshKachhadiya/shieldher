@@ -2,11 +2,14 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Plus, Trash, PhoneCall, AlertCircle } from 'lucide-react';
 import type { Guardian } from '../../data/mockData';
-import { useGuardians } from '../../data/store';
+import { useGuardians, useUserProfile } from '../../data/store';
+import { t } from '../../data/translations';
 
 export default function GuardiansPage() {
   const navigate = useNavigate();
   const [guardians, setGuardians] = useGuardians();
+  const [profile] = useUserProfile();
+  const lang = (profile.lang || 'en') as 'en' | 'hi' | 'gu';
   
   // Add guardian input states
   const [showAddForm, setShowAddForm] = useState(false);
@@ -64,8 +67,8 @@ export default function GuardiansPage() {
           <ArrowLeft className="w-4.5 h-4.5" />
         </button>
         <div>
-          <h2 className="font-display font-bold text-lg text-white">Emergency Guardians</h2>
-          <p className="text-xs text-slate-500 mt-0.5">Manage contacts notified during distress</p>
+          <h2 className="font-display font-bold text-lg text-white">{t('guardians_title', lang)}</h2>
+          <p className="text-xs text-slate-500 mt-0.5">{t('guardians_desc', lang)}</p>
         </div>
       </div>
 
@@ -121,7 +124,7 @@ export default function GuardiansPage() {
       {guardians.length === 0 && (
         <div className="text-center py-12 border border-dashed border-slate-900 rounded-2xl">
           <AlertCircle className="w-10 h-10 text-slate-655 mx-auto mb-2" />
-          <p className="text-xs text-slate-500">No emergency contacts configured.</p>
+          <p className="text-xs text-slate-500">{t('no_contacts', lang)}</p>
         </div>
       )}
 
@@ -132,18 +135,18 @@ export default function GuardiansPage() {
           className="w-full border border-dashed border-slate-800 hover:border-slate-700 bg-slate-950/20 text-slate-400 hover:text-white py-3.5 rounded-xl flex items-center justify-center gap-2 text-xs uppercase tracking-wider font-semibold cursor-pointer"
         >
           <Plus className="w-4.5 h-4.5 text-brand-red" />
-          <span>Add Emergency Contact</span>
+          <span>{t('add_contact_btn', lang)}</span>
         </button>
       ) : (
         <form onSubmit={handleAddGuardian} className="bg-dark-card border border-slate-900 rounded-2xl p-4 space-y-4">
           <h3 className="text-xs font-bold uppercase tracking-wider text-slate-350 border-b border-slate-900 pb-2">
-            Configure Contact
+            {t('configure_contact', lang)}
           </h3>
           
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="block text-[10px] text-slate-400 font-semibold uppercase tracking-wider mb-1">
-                Name
+                {t('contact_name', lang)}
               </label>
               <input
                 type="text"
@@ -157,7 +160,7 @@ export default function GuardiansPage() {
 
             <div>
               <label className="block text-[10px] text-slate-400 font-semibold uppercase tracking-wider mb-1">
-                Relation
+                {t('contact_relation', lang)}
               </label>
               <select
                 value={relation}
@@ -176,7 +179,7 @@ export default function GuardiansPage() {
 
           <div>
             <label className="block text-[10px] text-slate-400 font-semibold uppercase tracking-wider mb-1">
-              Mobile Number
+              {t('contact_mobile', lang)}
             </label>
             <input
               type="tel"
@@ -195,13 +198,13 @@ export default function GuardiansPage() {
               onClick={() => setShowAddForm(false)}
               className="flex-1 bg-slate-900 hover:bg-slate-850 text-slate-450 border border-slate-800 py-2.5 rounded-xl text-xs uppercase tracking-wider font-semibold cursor-pointer"
             >
-              Cancel
+              {t('cancel_btn', lang)}
             </button>
             <button
               type="submit"
               className="flex-1 bg-brand-red hover:bg-brand-red-dark text-white py-2.5 rounded-xl text-xs uppercase tracking-wider font-semibold cursor-pointer"
             >
-              Save Contact
+              {t('save_contact_btn', lang)}
             </button>
           </div>
         </form>

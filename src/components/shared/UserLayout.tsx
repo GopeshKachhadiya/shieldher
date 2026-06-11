@@ -4,6 +4,7 @@ import { Shield, Home, AlertOctagon, HelpCircle, User, MessageSquareCode, Globe 
 import { useUserProfile, useActiveSOS, useUserCoords, store } from '../../data/store';
 import ActiveSOSOverlay from '../sos/ActiveSOSOverlay';
 import ZoneAlertBanner from '../zones/ZoneAlertBanner';
+import { t } from '../../data/translations';
 
 export default function UserLayout() {
   const navigate = useNavigate();
@@ -43,11 +44,11 @@ export default function UserLayout() {
   };
 
   const navItems = [
-    { path: '/', label: 'Home', icon: Home },
-    { path: '/sos', label: 'Emergency Center', icon: AlertOctagon, highlight: true },
-    { path: '/complaints', label: 'My Complaints', icon: MessageSquareCode },
-    { path: '/safety-hub', label: 'Safety Hub', icon: HelpCircle },
-    { path: '/profile', label: 'Profile Settings', icon: User }
+    { path: '/', label: t('nav_home', lang), icon: Home },
+    { path: '/sos', label: t('nav_sos', lang), icon: AlertOctagon, highlight: true },
+    { path: '/complaints', label: t('nav_complaints', lang), icon: MessageSquareCode },
+    { path: '/safety-hub', label: t('nav_safety_hub', lang), icon: HelpCircle },
+    { path: '/profile', label: t('nav_profile', lang), icon: User }
   ];
 
   const languages = {
@@ -119,7 +120,7 @@ export default function UserLayout() {
           >
             <div className="flex items-center gap-2">
               <Globe className="w-4 h-4 text-slate-500" />
-              <span>Language</span>
+              <span>{t('language', lang)}</span>
             </div>
             <span className="font-bold text-brand-red bg-red-500/10 px-2 py-0.5 rounded text-[10px]">
               {languages[lang].split(' ')[0]}
@@ -188,7 +189,7 @@ export default function UserLayout() {
                 }`}>
                   <Icon className="w-7 h-7 text-white" />
                 </div>
-                <span className="text-[10px] text-brand-red font-semibold mt-1">SOS</span>
+                <span className="text-[10px] text-brand-red font-semibold mt-1">{t('sos_short', lang)}</span>
               </button>
             );
           }
