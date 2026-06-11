@@ -1,0 +1,94 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter", sans-serif;
+  --font-display: "Space Grotesk", sans-serif;
+  
+  --color-brand-red: #ef4444;
+  --color-brand-red-dark: #dc2626;
+  --color-police-blue: #3b82f6;
+  --color-police-blue-dark: #2563eb;
+  --color-dark-bg: #060913;
+  --color-dark-card: #121824;
+  --color-dark-card-hover: #1e293b;
+}
+
+@layer base {
+  body {
+    background-color: var(--color-dark-bg);
+    color: #f1f5f9;
+    font-family: var(--font-sans);
+    overflow-x: hidden;
+  }
+}
+
+/* Animations & Keyframes */
+@keyframes pulse-ring {
+  0% {
+    transform: scale(0.95);
+    opacity: 0.8;
+  }
+  50% {
+    opacity: 0.5;
+  }
+  100% {
+    transform: scale(2.2);
+    opacity: 0;
+  }
+}
+
+.pulse-ring-1 {
+  animation: pulse-ring 2.5s cubic-bezier(0.215, 0.61, 0.355, 1) infinite;
+}
+
+.pulse-ring-2 {
+  animation: pulse-ring 2.5s cubic-bezier(0.215, 0.61, 0.355, 1) infinite;
+  animation-delay: 0.8s;
+}
+
+.pulse-ring-3 {
+  animation: pulse-ring 2.5s cubic-bezier(0.215, 0.61, 0.355, 1) infinite;
+  animation-delay: 1.6s;
+}
+
+/* Custom WebGL/Shader Pulse Mock in CSS */
+.glowing-red-orb {
+  box-shadow: 0 0 40px 10px rgba(239, 68, 68, 0.4);
+}
+
+.glowing-green-orb {
+  box-shadow: 0 0 20px 5px rgba(34, 197, 94, 0.4);
+}
+
+.glowing-amber-orb {
+  box-shadow: 0 0 30px 8px rgba(245, 158, 11, 0.4);
+}
+
+/* Hide default scrollbars but keep functionality */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* Styled Scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #060913;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #1e293b;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #334155;
+}
