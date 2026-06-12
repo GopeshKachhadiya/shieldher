@@ -25,8 +25,8 @@ export default function MyComplaintsPage() {
   };
 
   const getPriorityStyle = (priority: string) => {
-    return priority === 'urgent' 
-      ? 'text-brand-red border-red-500/20 bg-red-500/5' 
+    return priority === 'urgent'
+      ? 'text-brand-red border-red-500/20 bg-red-500/5'
       : 'text-slate-400 border-slate-800 bg-slate-900/40';
   };
 
@@ -79,7 +79,7 @@ export default function MyComplaintsPage() {
                 )}
               </div>
             </div>
-            
+
             <ChevronRight className="w-5 h-5 text-slate-500 shrink-0" />
           </button>
         ))}

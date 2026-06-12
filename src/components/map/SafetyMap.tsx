@@ -71,6 +71,7 @@ export default function SafetyMap({
         mapRef.current = null;
       }
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Handle Resize/Dimension changes
@@ -152,7 +153,7 @@ export default function SafetyMap({
 
       zoneCirclesRef.current.push(circle);
     });
-  }, [dangerZones, selectedZone, interactive]);
+  }, [dangerZones, selectedZone, interactive, showHeatmap]);
 
   // Update Active SOS Incident Pins
   useEffect(() => {

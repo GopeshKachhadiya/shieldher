@@ -1,9 +1,22 @@
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { ShieldAlert, LayoutDashboard, FolderKanban, BarChart3, Users, LogOut } from 'lucide-react';
+import { useEffect } from 'react';
+import { useUserProfile, store, initWebSocket } from '../../data/store';
 
 export default function PoliceLayout() {
   const navigate = useNavigate();
   const location = useLocation();
+  const [profile] = useUserProfile();
+
+  useEffect(() => {
+    if (!profile.isLoggedIn || profile.role !== 'police') {
+      navigate('/police/login');
+    }
+  }, [profile, navigate]);
+
+  useEffect(() => {
+    initWebSocket();
+  }, []);
 
   const menuItems = [
     { path: '/police', label: 'Incident Desk', icon: LayoutDashboard },
@@ -53,8 +66,19 @@ export default function PoliceLayout() {
         {/* Sign Out Section */}
         <div className="p-3 border-t border-slate-900">
           <button
-            onClick={() => navigate('/police/login')}
-            className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium text-slate-500 hover:text-red-400 hover:bg-red-500/10 transition-all"
+            onClick={() => {
+              store.setProfile({
+                name: '',
+                phone: '',
+                lang: 'en',
+                aadhaar: '',
+                role: 'user',
+                isLoggedIn: false
+              });
+              localStorage.removeItem('shieldher_jwt_token');
+              navigate('/police/login');
+            }}
+            className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium text-slate-500 hover:text-red-400 hover:bg-red-500/10 transition-all cursor-pointer"
           >
             <LogOut className="w-5 h-5" />
             <span>Sign Out</span>

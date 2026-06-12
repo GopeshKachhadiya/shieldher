@@ -27,9 +27,9 @@ export default function SOSPage() {
 
   // Auto-drifting coordinates logic during active SOS
   useEffect(() => {
-    let interval: any;
+    let interval: number | undefined;
     if (sosActive && activeSOS) {
-      interval = setInterval(() => {
+      interval = window.setInterval(() => {
         const nextCoords = {
           lat: coords.lat + (Math.random() - 0.5) * 0.0001,
           lng: coords.lng + (Math.random() - 0.5) * 0.0001
@@ -38,7 +38,9 @@ export default function SOSPage() {
         store.updateSOSLocation(activeSOS.id, nextCoords.lat, nextCoords.lng);
       }, 4000);
     }
-    return () => clearInterval(interval);
+    return () => {
+      if (interval) window.clearInterval(interval);
+    };
   }, [sosActive, coords, activeSOS, updateCoords]);
 
   const handleTrigger = (type: 'button' | 'silent' | 'voice') => {

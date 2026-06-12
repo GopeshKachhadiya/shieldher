@@ -9,7 +9,7 @@ interface SOSButtonProps {
 export default function SOSButton({ onTrigger, isActive }: SOSButtonProps) {
   const [holding, setHolding] = useState(false);
   const [progress, setProgress] = useState(0);
-  const timerRef = useRef<any>(null);
+  const timerRef = useRef<number | null>(null);
   const startTimeRef = useRef<number>(0);
   const HOLD_TIME = 3000; // 3 seconds hold time
 
@@ -20,13 +20,13 @@ export default function SOSButton({ onTrigger, isActive }: SOSButtonProps) {
     setProgress(0);
     startTimeRef.current = Date.now();
 
-    timerRef.current = setInterval(() => {
+    timerRef.current = window.setInterval(() => {
       const elapsed = Date.now() - startTimeRef.current;
       const pct = Math.min(elapsed / HOLD_TIME, 1);
       setProgress(pct);
 
       if (elapsed >= HOLD_TIME) {
-        clearInterval(timerRef.current!);
+        window.clearInterval(timerRef.current!);
         setHolding(false);
         setProgress(0);
         onTrigger('button');
@@ -36,7 +36,7 @@ export default function SOSButton({ onTrigger, isActive }: SOSButtonProps) {
 
   const endHold = () => {
     if (timerRef.current) {
-      clearInterval(timerRef.current);
+      window.clearInterval(timerRef.current);
     }
     setHolding(false);
     setProgress(0);
@@ -44,7 +44,7 @@ export default function SOSButton({ onTrigger, isActive }: SOSButtonProps) {
 
   useEffect(() => {
     return () => {
-      if (timerRef.current) clearInterval(timerRef.current);
+      if (timerRef.current) window.clearInterval(timerRef.current);
     };
   }, []);
 

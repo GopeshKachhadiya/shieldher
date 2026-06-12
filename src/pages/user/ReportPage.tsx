@@ -27,7 +27,7 @@ export default function ReportPage() {
   // Action states
   const [aiDrafting, setAiDrafting] = useState(false);
   const [scanningProfile, setScanningProfile] = useState(false);
-  const [scanResult, setScanResult] = useState<any>(null);
+  const [scanResult, setScanResult] = useState<{ fakeScore: number; reasons: string[] } | null>(null);
   const [uploading, setUploading] = useState(false);
 
   // Map Category IDs to Lucide Icons
@@ -60,49 +60,70 @@ export default function ReportPage() {
     }, 1500);
   };
 
-  // File Upload mock + hash calculation
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  // File Hashing with Web Cryptography API (SHA-256)
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files) return;
     setUploading(true);
     
-    // Simulate reading file and hashing
-    setTimeout(() => {
-      const filesArr = Array.from(e.target.files!);
-      const newFiles = filesArr.map((f, idx) => {
-        // Generate pseudo-SHA256 hash
-        const chars = '0123456789abcdef';
-        let hash = '';
-        for (let i = 0; i < 64; i++) {
-          hash += chars[Math.floor(Math.random() * 16)];
-        }
-        return {
-          id: `ev-${Date.now()}-${idx}`,
-          name: f.name,
-          size: `${(f.size / (1024 * 1024)).toFixed(2)} MB`,
-          hash: hash
-        };
-      });
-
+    try {
+      const filesArr = Array.from(e.target.files);
+      const newFiles = await Promise.all(
+        filesArr.map(async (f, idx) => {
+          const arrayBuffer = await f.arrayBuffer();
+          const hashBuffer = await crypto.subtle.digest('SHA-256', arrayBuffer);
+          const hashArray = Array.from(new Uint8Array(hashBuffer));
+          const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+          return {
+            id: `ev-${Date.now()}-${idx}`,
+            name: f.name,
+            size: `${(f.size / (1024 * 1024)).toFixed(2)} MB`,
+            hash: hashHex
+          };
+        })
+      );
       setEvidenceFiles(prev => [...prev, ...newFiles]);
+    } catch (err) {
+      console.error('Failed to compute file hash:', err);
+    } finally {
       setUploading(false);
-    }, 1200);
+    }
   };
 
   const removeFile = (id: string) => {
     setEvidenceFiles(prev => prev.filter(f => f.id !== id));
   };
 
-  // Suspect scan lookup mock
-  const handleProfileScan = () => {
+  // Suspect scan lookup with backend API
+  const handleProfileScan = async () => {
     if (!suspectInfo.url) return;
     setScanningProfile(true);
     setScanResult(null);
-    setTimeout(() => {
+    try {
+      const response = await fetch('http://localhost:8000/api/scan-profile', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ url: suspectInfo.url }),
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setScanResult({
+          fakeScore: data.fakeScore,
+          reasons: data.reasons
+        });
+      } else {
+        throw new Error('Backend scan failed');
+      }
+    } catch (err) {
+      console.warn('Backend scan failed. Using fallback mock.', err);
       const res = getProfileScanResult(suspectInfo.url);
       setScanResult(res);
+    } finally {
       setScanningProfile(false);
-    }, 2000);
+    }
   };
+
 
   // Submit Complaint Mock
   const handleSubmit = (e: React.FormEvent) => {

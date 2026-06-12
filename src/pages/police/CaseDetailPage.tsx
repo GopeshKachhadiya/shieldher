@@ -14,17 +14,48 @@ export default function CaseDetailPage() {
   const complaint = complaints.find(c => c.id === id);
 
   const [message, setMessage] = useState('');
-  const [firText, setFirText] = useState('');
+  const [firText, setFirText] = useState(() => complaint?.firDraft?.text || '');
   const [firFinalized, setFirFinalized] = useState(!!complaint?.firNumber);
+  const [prevComplaintId, setPrevComplaintId] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (complaint?.firDraft?.text && !firText) {
-      setFirText(complaint.firDraft.text);
-    }
-  }, [complaint]);
+  if (complaint && complaint.id !== prevComplaintId) {
+    setPrevComplaintId(complaint.id);
+    setFirText(complaint.firDraft?.text || '');
+  }
+
   const [hashVerifying, setHashVerifying] = useState(false);
   const [hashVerified, setHashVerified] = useState(false);
+  const [deepfakeResults, setDeepfakeResults] = useState<Record<string, { isDeepfake: boolean; score: number; reasons: string[] }>>({});
+  const [scanningFiles, setScanningFiles] = useState<Record<string, boolean>>({});
   const chatEndRef = useRef<HTMLDivElement>(null);
+
+  const runDeepfakeScan = async (fileId: string, fileName: string, fileSize: string) => {
+    setScanningFiles(prev => ({ ...prev, [fileId]: true }));
+    try {
+      const response = await fetch('http://localhost:8000/api/deepfake-detect', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ fileName, fileSize }),
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setDeepfakeResults(prev => ({
+          ...prev,
+          [fileId]: {
+            isDeepfake: data.isDeepfake,
+            score: data.score,
+            reasons: data.reasons
+          }
+        }));
+      }
+    } catch (err) {
+      console.error('Deepfake scan failed:', err);
+    } finally {
+      setScanningFiles(prev => ({ ...prev, [fileId]: false }));
+    }
+  };
 
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -107,7 +138,7 @@ export default function CaseDetailPage() {
                 <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider block">Investigation Status</span>
                 <select
                   value={complaint.status}
-                  onChange={(e) => handleStatusChange(e.target.value as any)}
+                  onChange={(e) => handleStatusChange(e.target.value as Complaint['status'])}
                   className="bg-slate-950/60 border border-slate-900 rounded-lg py-1.5 px-2.5 text-xs text-slate-300 focus:outline-none mt-1"
                 >
                   <option value="submitted">Submitted</option>
@@ -143,16 +174,46 @@ export default function CaseDetailPage() {
               </div>
             )}
 
-            <div className="space-y-2 max-h-40 overflow-y-auto pr-1">
+            <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
               {complaint.evidenceFiles.map((file) => (
-                <div key={file.id} className="bg-slate-950/40 border border-slate-900 p-2.5 rounded-xl text-xs space-y-1">
+                <div key={file.id} className="bg-slate-950/40 border border-slate-900 p-2.5 rounded-xl text-xs space-y-2">
                   <div className="flex justify-between items-center">
                     <span className="font-bold text-slate-200 truncate">{file.name}</span>
                     <span className="text-[10px] text-slate-500 uppercase">{file.size}</span>
                   </div>
                   <div className="text-[9.5px] text-slate-550 flex justify-between items-center gap-2">
-                    <span className="font-mono text-emerald-500 select-all truncate max-w-[280px]">Hash: {file.hash}</span>
+                    <span className="font-mono text-emerald-500 select-all truncate max-w-[240px]">Hash: {file.hash}</span>
                     <span className="text-slate-600 font-semibold italic">MATCHED</span>
+                  </div>
+                  <div className="flex items-center justify-between border-t border-slate-900/60 pt-2">
+                    {deepfakeResults[file.id] ? (
+                      <div className="w-full space-y-1">
+                        <div className="flex justify-between items-center">
+                          <span className={`text-[10px] font-bold ${deepfakeResults[file.id].isDeepfake ? 'text-rose-400' : 'text-emerald-400'}`}>
+                            {deepfakeResults[file.id].isDeepfake ? '🚨 Deepfake Detected' : '✅ Verified Authentic'}
+                          </span>
+                          <span className="text-[9px] font-extrabold bg-slate-900 px-1.5 py-0.5 rounded text-slate-400">
+                            Score: {deepfakeResults[file.id].score}%
+                          </span>
+                        </div>
+                        {deepfakeResults[file.id].isDeepfake && (
+                          <p className="text-[9.5px] text-slate-500 leading-normal font-sans italic">
+                            Reason: {deepfakeResults[file.id].reasons[0]}
+                          </p>
+                        )}
+                      </div>
+                    ) : (
+                      <>
+                        <span className="text-[9.5px] text-slate-500">Forensics: Not Scanned</span>
+                        <button
+                          onClick={() => runDeepfakeScan(file.id, file.name, file.size)}
+                          disabled={scanningFiles[file.id]}
+                          className="bg-slate-900 border border-slate-800 text-slate-400 hover:text-white px-2 py-0.5 rounded text-[9.5px] font-bold uppercase transition-colors cursor-pointer"
+                        >
+                          {scanningFiles[file.id] ? 'Scanning...' : 'Scan Deepfake'}
+                        </button>
+                      </>
+                    )}
                   </div>
                 </div>
               ))}

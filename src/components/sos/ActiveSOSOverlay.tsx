@@ -12,7 +12,7 @@ export default function ActiveSOSOverlay({ onDeactivate }: ActiveSOSOverlayProps
   const [calcResult, setCalcResult] = useState('');
   const [cancelHolding, setCancelHolding] = useState(false);
   const [cancelProgress, setCancelProgress] = useState(0);
-  const cancelTimerRef = useRef<any>(null);
+  const cancelTimerRef = useRef<number | null>(null);
   
   const { activeSOS } = useActiveSOS();
   const coords = activeSOS ? { lat: activeSOS.latitude, lng: activeSOS.longitude } : { lat: 23.0225, lng: 72.5714 };
@@ -22,13 +22,13 @@ export default function ActiveSOSOverlay({ onDeactivate }: ActiveSOSOverlayProps
     setCancelHolding(true);
     setCancelProgress(0);
     const startTime = Date.now();
-    cancelTimerRef.current = setInterval(() => {
+    cancelTimerRef.current = window.setInterval(() => {
       const elapsed = Date.now() - startTime;
       const pct = Math.min(elapsed / 2000, 1);
       setCancelProgress(pct);
 
       if (elapsed >= 2000) {
-        clearInterval(cancelTimerRef.current!);
+        window.clearInterval(cancelTimerRef.current!);
         setCancelHolding(false);
         onDeactivate();
       }
@@ -36,7 +36,7 @@ export default function ActiveSOSOverlay({ onDeactivate }: ActiveSOSOverlayProps
   };
 
   const endCancelHold = () => {
-    if (cancelTimerRef.current) clearInterval(cancelTimerRef.current);
+    if (cancelTimerRef.current) window.clearInterval(cancelTimerRef.current);
     setCancelHolding(false);
     setCancelProgress(0);
   };
@@ -60,7 +60,7 @@ export default function ActiveSOSOverlay({ onDeactivate }: ActiveSOSOverlayProps
         const sanitized = calcInput.replace(/[^0-9+\-*/.]/g, '');
         const res = Function(`"use strict"; return (${sanitized})`)();
         setCalcResult(String(res));
-      } catch (err) {
+      } catch {
         setCalcResult('Error');
       }
     } else {

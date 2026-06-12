@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { Shield, Home, AlertOctagon, HelpCircle, User, MessageSquareCode, Globe } from 'lucide-react';
-import { useUserProfile, useActiveSOS, useUserCoords, store } from '../../data/store';
+import { useUserProfile, useActiveSOS, useUserCoords, store, initWebSocket } from '../../data/store';
 import ActiveSOSOverlay from '../sos/ActiveSOSOverlay';
 import ZoneAlertBanner from '../zones/ZoneAlertBanner';
 import { t } from '../../data/translations';
@@ -10,6 +10,17 @@ export default function UserLayout() {
   const navigate = useNavigate();
   const location = useLocation();
   const [profile, updateProfile] = useUserProfile();
+  
+  useEffect(() => {
+    if (!profile.isLoggedIn || profile.role !== 'user') {
+      navigate('/login');
+    }
+  }, [profile, navigate]);
+
+  useEffect(() => {
+    initWebSocket();
+  }, []);
+
   const lang = (profile.lang || 'en') as 'en' | 'hi' | 'gu';
   const { activeSOS } = useActiveSOS();
   const [, updateCoords] = useUserCoords();

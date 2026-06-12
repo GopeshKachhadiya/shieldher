@@ -15,10 +15,20 @@ export default function SafetyHubPage() {
   
   const [activeTab, setActiveTab] = useState<'scanner' | 'helplines' | 'lessons' | 'simulation'>('scanner');
   
+  interface PhishingScanResult {
+    url: string;
+    phishingScore: number;
+    riskLevel: string;
+    domainAge: string;
+    sslValid: boolean;
+    reasons: string[];
+    confidence?: number;
+  }
+
   // Link scanner state
   const [url, setUrl] = useState('');
   const [loading, setLoading] = useState(false);
-  const [scanResult, setScanResult] = useState<any>(null);
+  const [scanResult, setScanResult] = useState<PhishingScanResult | null>(null);
 
   // Geofencing states from store
   const [geofencingEnabled, toggleGeofencing] = useGeofencingEnabled();
@@ -81,14 +91,16 @@ export default function SafetyHubPage() {
   // Web Speech API Integration
   useEffect(() => {
     if (!voiceEnabled) {
-      setIsListening(false);
       return;
     }
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     if (!SpeechRecognition) {
-      setSpeechError('SpeechRecognition is not supported in this browser. Use Chrome or Edge.');
-      setVoiceLog('Error: SpeechRecognition API not supported.');
+      setTimeout(() => {
+        setSpeechError('SpeechRecognition is not supported in this browser. Use Chrome or Edge.');
+        setVoiceLog('Error: SpeechRecognition API not supported.');
+      }, 0);
       return;
     }
 
@@ -103,7 +115,7 @@ export default function SafetyHubPage() {
       setVoiceLog(prev => `Speech recognition active. Listening for trigger keywords...\n${prev}`);
     };
 
-    recognition.onresult = (event: any) => {
+    recognition.onresult = (event: { results: { length: number; [index: number]: { [index: number]: { transcript: string } } } }) => {
       const result = event.results[event.results.length - 1];
       const transcript = result[0].transcript.toLowerCase().trim();
       setVoiceLog(prev => `Captured speech: "${transcript}"\n${prev}`);
@@ -123,7 +135,7 @@ export default function SafetyHubPage() {
       }
     };
 
-    recognition.onerror = (e: any) => {
+    recognition.onerror = (e: { error: string }) => {
       console.warn('SpeechRecognition error:', e);
       if (e.error === 'not-allowed') {
         setSpeechError('Microphone permission blocked by browser.');
@@ -138,20 +150,26 @@ export default function SafetyHubPage() {
       if (voiceEnabled) {
         try {
           recognition.start();
-        } catch (err) {}
+        } catch {
+          // Ignore
+        }
       }
     };
 
     try {
       recognition.start();
-    } catch (err) {
-      setSpeechError('Failed to capture audio.');
+    } catch {
+      setTimeout(() => {
+        setSpeechError('Failed to capture audio.');
+      }, 0);
     }
 
     return () => {
       try {
         recognition.stop();
-      } catch (err) {}
+      } catch {
+        // Ignore
+      }
     };
   }, [voiceEnabled, lang, coords]);
 
@@ -185,17 +203,17 @@ export default function SafetyHubPage() {
 
       {/* Tabs Menu */}
       <div className="flex bg-slate-950/80 border border-slate-900 rounded-xl p-1 shrink-0">
-        {[
+        {([
           { id: 'scanner', label: t('link_scanner', lang), icon: Globe },
           { id: 'helplines', label: t('directories', lang), icon: Phone },
           { id: 'lessons', label: t('awareness', lang), icon: BookOpen },
           { id: 'simulation', label: t('settings_simulation', lang), icon: Settings }
-        ].map((tab) => {
+        ] as const).map((tab) => {
           const Icon = tab.icon;
           return (
             <button
               key={tab.id}
-              onClick={() => setActiveTab(tab.id as any)}
+              onClick={() => setActiveTab(tab.id)}
               className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-xs font-semibold uppercase tracking-wider transition-all cursor-pointer ${
                 activeTab === tab.id
                   ? 'bg-brand-red text-white shadow shadow-brand-red/15'

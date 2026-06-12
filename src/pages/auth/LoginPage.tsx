@@ -1,7 +1,7 @@
 import { useState, type FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Shield, Lock, ArrowRight, ShieldAlert } from 'lucide-react';
-import { store } from '../../data/store';
+import { store, syncFromBackend } from '../../data/store';
 
 export default function LoginPage() {
   const navigate = useNavigate();
@@ -25,7 +25,7 @@ export default function LoginPage() {
     }, 1200);
   };
 
-  const handleVerifyOtp = (e: FormEvent) => {
+  const handleVerifyOtp = async (e: FormEvent) => {
     e.preventDefault();
     if (otp.length !== 6) {
       setError('Enter the 6-digit OTP code (e.g., 123456)');
@@ -33,16 +33,27 @@ export default function LoginPage() {
     }
     setError('');
     setLoading(true);
-    setTimeout(() => {
-      setLoading(false);
-      const profile = store.getProfile();
-      store.setProfile({
-        ...profile,
-        phone: `+91 ${phone}`,
-        isLoggedIn: true
+    try {
+      const response = await fetch('http://localhost:8000/api/auth/verify-otp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone: `+91 ${phone}`, otp })
       });
+      if (!response.ok) {
+        const errData = await response.json();
+        throw new Error(errData.detail || 'OTP verification failed.');
+      }
+      const data = await response.json();
+      localStorage.setItem('shieldher_jwt_token', data.token);
+      store.setProfile(data.profile);
+      await syncFromBackend();
       navigate('/');
-    }, 1500);
+    } catch (err) {
+      const errorMsg = err instanceof Error ? err.message : 'Verification failed.';
+      setError(errorMsg);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (

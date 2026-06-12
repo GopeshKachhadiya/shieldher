@@ -1,9 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { 
   Radio, ShieldCheck, MapPin, UserCheck, Flame, CheckCircle, Users
 } from 'lucide-react';
 import { useLiveIncidents, useDangerZones, useUserCoords, store } from '../../data/store';
-import type { LiveIncident } from '../../data/mockData';
 import SafetyMap from '../../components/map/SafetyMap';
 
 export default function PoliceDashboard() {
@@ -11,18 +10,10 @@ export default function PoliceDashboard() {
   const zones = useDangerZones();
   const [userCoords] = useUserCoords();
 
-  const [selectedInc, setSelectedInc] = useState<LiveIncident | null>(null);
+  const [selectedIncId, setSelectedIncId] = useState<string | null>(null);
   const [heatmapEnabled, setHeatmapEnabled] = useState(false);
 
-  // Ensure selected incident updates dynamically when store changes
-  useEffect(() => {
-    if (!selectedInc && incidents.length > 0) {
-      setSelectedInc(incidents[0]);
-    } else if (selectedInc) {
-      const current = incidents.find(i => i.id === selectedInc.id);
-      if (current) setSelectedInc(current);
-    }
-  }, [incidents, selectedInc]);
+  const selectedInc = incidents.find(i => i.id === selectedIncId) || incidents[0] || null;
 
   // Dispatch Unit Action Mock
   const handleDispatch = (id: string) => {
@@ -96,7 +87,7 @@ export default function PoliceDashboard() {
             {incidents.map((inc) => (
               <button
                 key={inc.id}
-                onClick={() => setSelectedInc(inc)}
+                onClick={() => setSelectedIncId(inc.id)}
                 className={`w-full text-left p-3.5 rounded-xl border transition-all flex flex-col justify-between cursor-pointer hover:border-slate-800 ${
                   selectedInc?.id === inc.id
                     ? 'bg-slate-900/40 border-brand-red shadow-lg shadow-brand-red/5'

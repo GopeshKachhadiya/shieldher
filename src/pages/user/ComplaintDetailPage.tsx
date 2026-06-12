@@ -49,23 +49,23 @@ export default function ComplaintDetailPage() {
     }, 2500);
   };
 
-  const handleAddEvidenceMock = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleAddEvidence = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files || e.target.files.length === 0 || !complaint) return;
     setAddingEvidence(true);
 
-    setTimeout(() => {
-      const chars = '0123456789abcdef';
-      let hash = '';
-      for (let i = 0; i < 64; i++) {
-        hash += chars[Math.floor(Math.random() * 16)];
-      }
+    try {
+      const file = e.target.files[0];
+      const arrayBuffer = await file.arrayBuffer();
+      const hashBuffer = await crypto.subtle.digest('SHA-256', arrayBuffer);
+      const hashArray = Array.from(new Uint8Array(hashBuffer));
+      const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
 
       const newEv = {
         id: `ev-${Date.now()}`,
-        name: e.target.files![0].name,
-        size: `${(e.target.files![0].size / (1024 * 1024)).toFixed(2)} MB`,
-        type: e.target.files![0].type,
-        hash: hash,
+        name: file.name,
+        size: `${(file.size / (1024 * 1024)).toFixed(2)} MB`,
+        type: file.type,
+        hash: hashHex,
         url: '#',
         uploadedAt: new Date().toISOString()
       };
@@ -80,8 +80,11 @@ export default function ComplaintDetailPage() {
         return c;
       });
       store.setComplaints(updatedComplaints);
+    } catch (err) {
+      console.error('Failed to hash and upload evidence:', err);
+    } finally {
       setAddingEvidence(false);
-    }, 1200);
+    }
   };
 
   // Progression steps mapping
@@ -177,7 +180,7 @@ export default function ComplaintDetailPage() {
           <div className="relative">
             <input 
               type="file" 
-              onChange={handleAddEvidenceMock}
+              onChange={handleAddEvidence}
               disabled={addingEvidence}
               className="absolute inset-0 opacity-0 cursor-pointer w-full"
             />

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ShieldAlert, UserCheck, Key, Shield, ArrowRight } from 'lucide-react';
+import { store, syncFromBackend } from '../../data/store';
 
 export default function PoliceLoginPage() {
   const navigate = useNavigate();
@@ -10,7 +11,7 @@ export default function PoliceLoginPage() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!badge || !password) {
       setError('Please fill in badge number and credential password.');
@@ -19,10 +20,27 @@ export default function PoliceLoginPage() {
     setError('');
     setLoading(true);
 
-    setTimeout(() => {
-      setLoading(false);
+    try {
+      const response = await fetch('http://localhost:8000/api/auth/police-login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ badge, password, totp })
+      });
+      if (!response.ok) {
+        const errData = await response.json();
+        throw new Error(errData.detail || 'Authorization failed.');
+      }
+      const data = await response.json();
+      localStorage.setItem('shieldher_jwt_token', data.token);
+      store.setProfile(data.profile);
+      await syncFromBackend();
       navigate('/police');
-    }, 1500);
+    } catch (err) {
+      const errorMsg = err instanceof Error ? err.message : 'Login failed.';
+      setError(errorMsg);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (

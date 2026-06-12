@@ -12,6 +12,7 @@ export interface UserProfile {
   phone: string;
   lang: string;
   aadhaar?: string;
+  role?: string;
   isLoggedIn: boolean;
 }
 
@@ -186,11 +187,12 @@ export function haversineDistance(lat1: number, lng1: number, lat2: number, lng2
 
 // Default initial state
 const defaultProfile: UserProfile = {
-  name: 'Priya Sharma',
-  phone: '+91 98765 43210',
+  name: '',
+  phone: '',
   lang: 'en',
   aadhaar: '',
-  isLoggedIn: true
+  role: 'user',
+  isLoggedIn: false
 };
 
 const STORE_KEYS = {
@@ -215,7 +217,7 @@ export const getStoredItem = <T>(key: string, defaultValue: T): T => {
   try {
     const item = localStorage.getItem(key);
     return item ? JSON.parse(item) : defaultValue;
-  } catch (e) {
+  } catch {
     return defaultValue;
   }
 };
@@ -229,13 +231,122 @@ export const setStoredItem = <T>(key: string, value: T) => {
   }
 };
 
+// Backend Sync & WebSockets Integration
+const BASE_URL = 'http://localhost:8000';
+
+export const syncFromBackend = async () => {
+  try {
+    const resComplaints = await fetch(`${BASE_URL}/api/complaints`);
+    if (resComplaints.ok) {
+      const complaints = await resComplaints.json();
+      setStoredItem(STORE_KEYS.COMPLAINTS, complaints);
+    }
+    const resGuardians = await fetch(`${BASE_URL}/api/guardians`);
+    if (resGuardians.ok) {
+      const guardians = await resGuardians.json();
+      setStoredItem(STORE_KEYS.GUARDIANS, guardians);
+    }
+    const resIncidents = await fetch(`${BASE_URL}/api/sos/active`);
+    if (resIncidents.ok) {
+      const incidents = await resIncidents.json();
+      setStoredItem(STORE_KEYS.LIVE_INCIDENTS, incidents);
+    }
+  } catch {
+    console.warn("Backend sync failed. Using local storage fallback.");
+  }
+};
+
+// Start background sync
+syncFromBackend();
+
+let ws: WebSocket | null = null;
+
+export const initWebSocket = () => {
+  if (ws && (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING)) {
+    return;
+  }
+  try {
+    ws = new WebSocket('ws://localhost:8000/ws/sos');
+    ws.onmessage = (event) => {
+      try {
+        const data = JSON.parse(event.data);
+        console.log('[WS Msg]', data);
+        if (data.type === 'SOS_TRIGGERED') {
+          const current = store.getLiveIncidents();
+          if (!current.some(i => i.id === data.incident.id)) {
+            store.setLiveIncidents([data.incident, ...current]);
+          }
+        } else if (data.type === 'SOS_DISPATCHED') {
+          const current = store.getLiveIncidents();
+          const updated = current.map(inc => {
+            if (inc.id === data.id) {
+              return { ...inc, status: data.status, assignedOfficerId: data.assignedOfficerId };
+            }
+            return inc;
+          });
+          store.setLiveIncidents(updated);
+        } else if (data.type === 'SOS_RESOLVED') {
+          const current = store.getLiveIncidents();
+          const updated = current.map(inc => {
+            if (inc.id === data.id) {
+              return { ...inc, status: data.status };
+            }
+            return inc;
+          });
+          store.setLiveIncidents(updated);
+          if (store.getActiveSOSId() === data.id) {
+            store.setActiveSOSId(null);
+          }
+        } else if (data.type === 'SOS_LOCATION_UPDATE') {
+          const current = store.getLiveIncidents();
+          const updated = current.map(inc => {
+            if (inc.id === data.id) {
+              return { ...inc, latitude: data.latitude, longitude: data.longitude };
+            }
+            return inc;
+          });
+          store.setLiveIncidents(updated);
+        }
+      } catch (err) {
+        console.error('WS parse error:', err);
+      }
+    };
+    ws.onclose = () => {
+      setTimeout(initWebSocket, 5000);
+    };
+    ws.onerror = () => {
+      ws?.close();
+    };
+  } catch (err) {
+    console.error('WS init error:', err);
+  }
+};
+
+export const sendLocationUpdate = (id: string, lat: number, lng: number) => {
+  if (ws && ws.readyState === WebSocket.OPEN) {
+    ws.send(JSON.stringify({
+      type: 'location_update',
+      id,
+      latitude: lat,
+      longitude: lng
+    }));
+  }
+};
+
 // Global Store State Methods
 export const store = {
   getProfile: () => getStoredItem<UserProfile>(STORE_KEYS.PROFILE, defaultProfile),
   setProfile: (profile: UserProfile) => setStoredItem(STORE_KEYS.PROFILE, profile),
   
   getGuardians: () => getStoredItem<Guardian[]>(STORE_KEYS.GUARDIANS, initialGuardians),
-  setGuardians: (guardians: Guardian[]) => setStoredItem(STORE_KEYS.GUARDIANS, guardians),
+  setGuardians: (guardians: Guardian[]) => {
+    setStoredItem(STORE_KEYS.GUARDIANS, guardians);
+    fetch(`${BASE_URL}/api/guardians`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(guardians)
+    }).catch(err => console.warn('Failed to upload guardians to backend:', err));
+  },
   
   getComplaints: () => getStoredItem<Complaint[]>(STORE_KEYS.COMPLAINTS, initialComplaints),
   setComplaints: (complaints: Complaint[]) => setStoredItem(STORE_KEYS.COMPLAINTS, complaints),
@@ -257,8 +368,8 @@ export const store = {
 
     const newIncident: LiveIncident = {
       id: newId,
-      userName: profile.name,
-      phone: profile.phone,
+      userName: profile.name || 'Priya Sharma',
+      phone: profile.phone || '+91 98765 43210',
       latitude: coords.lat,
       longitude: coords.lng,
       accuracy: 6,
@@ -268,9 +379,32 @@ export const store = {
     };
 
     const currentIncidents = store.getLiveIncidents();
-    // Add new incident to the top
     store.setLiveIncidents([newIncident, ...currentIncidents]);
     store.setActiveSOSId(newId);
+
+    // Call backend
+    fetch(`${BASE_URL}/api/sos`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        triggerType: type,
+        latitude: coords.lat,
+        longitude: coords.lng
+      })
+    }).then(async res => {
+      if (res.ok) {
+        const data = await res.json();
+        store.setActiveSOSId(data.id);
+        const updated = store.getLiveIncidents().map(inc => {
+          if (inc.id === newId) {
+            return { ...inc, id: data.id };
+          }
+          return inc;
+        });
+        store.setLiveIncidents(updated);
+      }
+    }).catch(err => console.warn('Failed to trigger backend SOS:', err));
+
     return newId;
   },
 
@@ -283,6 +417,7 @@ export const store = {
       return inc;
     });
     store.setLiveIncidents(updated);
+    sendLocationUpdate(id, lat, lng);
   },
 
   resolveSOS: (id: string) => {
@@ -300,6 +435,11 @@ export const store = {
     if (activeId === id) {
       store.setActiveSOSId(null);
     }
+
+    // Call backend
+    fetch(`${BASE_URL}/api/sos/${id}/resolve`, {
+      method: 'PUT'
+    }).catch(err => console.warn('Failed to resolve backend SOS:', err));
   },
 
   dispatchPCR: (id: string, officerId: string = 'CC-4902') => {
@@ -311,6 +451,11 @@ export const store = {
       return inc;
     });
     store.setLiveIncidents(updated);
+
+    // Call backend
+    fetch(`${BASE_URL}/api/sos/${id}/dispatch`, {
+      method: 'PUT'
+    }).catch(err => console.warn('Failed to dispatch backend SOS:', err));
   },
 
   addComplaint: (category: string, description: string, date: string, suspect: { username: string; url: string; platform: string }, evidence: { name: string; size: string; hash: string }[], generateFir: boolean) => {
@@ -344,7 +489,7 @@ export const store = {
         {
           id: `msg-${Date.now()}`,
           sender: 'officer',
-          text: `Hello ${profile.name}, we have successfully received your complaint under file reference ${compId}. An officer will be assigned shortly to review the evidence.`,
+          text: `Hello ${profile.name || 'Priya Sharma'}, we have successfully received your complaint under file reference ${compId}. An officer will be assigned shortly to review the evidence.`,
           timestamp: new Date().toISOString()
         }
       ],
@@ -355,13 +500,36 @@ export const store = {
       const formattedCategory = category.replace('_', ' ').toUpperCase();
       newComplaint.firNumber = `FIR/${new Date().getFullYear()}/CYBER/${Math.floor(1000 + Math.random() * 9000)}`;
       newComplaint.firDraft = {
-        text: `FIRST INFORMATION REPORT\nUnder Section 154 CrPC\n\n1. District: Ahmedabad City\n2. Police Station: Cyber Crime Branch\n3. FIR Number: ${newComplaint.firNumber}\n4. Date & Time of Occurrence: ${date} (Reported: ${new Date().toLocaleDateString()})\n\n5. Details of Complainant:\n   Name: ${profile.name}\n   Contact: ${profile.phone}\n\n6. Description of Incident:\n   The complainant reports persistent cybercrime activity relating to ${formattedCategory}. The detailed breakdown of events is as follows:\n   ${description}\n\n7. Suspect Details:\n   Username: ${suspect.username || 'N/A'}\n   Platform: ${suspect.platform || 'N/A'}\n   Profile URL: ${suspect.url || 'N/A'}\n\n8. Applicable Sections:\n   - Section 354D IPC (Cyberstalking / Harassment)\n   - Section 66C Information Technology Act (Identity Theft/Impersonation)\n   - Section 66E IT Act (Violation of Privacy)`,
+        text: `FIRST INFORMATION REPORT\nUnder Section 154 CrPC\n\n1. District: Ahmedabad City\n2. Police Station: Cyber Crime Branch\n3. FIR Number: ${newComplaint.firNumber}\n4. Date & Time of Occurrence: ${date} (Reported: ${new Date().toLocaleDateString()})\n\n5. Details of Complainant:\n   Name: ${profile.name || 'Priya Sharma'}\n   Contact: ${profile.phone || '+91 98765 43210'}\n\n6. Description of Incident:\n   The complainant reports persistent cybercrime activity relating to ${formattedCategory}. The detailed breakdown of events is as follows:\n   ${description}\n\n7. Suspect Details:\n   Username: ${suspect.username || 'N/A'}\n   Platform: ${suspect.platform || 'N/A'}\n   Profile URL: ${suspect.url || 'N/A'}\n\n8. Applicable Sections:\n   - Section 354D IPC (Cyberstalking / Harassment)\n   - Section 66C Information Technology Act (Identity Theft/Impersonation)\n   - Section 66E IT Act (Violation of Privacy)`,
         ipcSections: ['Section 354D IPC', 'Section 66C IT Act', 'Section 66E IT Act']
       };
     }
 
     const currentComplaints = store.getComplaints();
     store.setComplaints([newComplaint, ...currentComplaints]);
+
+    // Call backend
+    fetch(`${BASE_URL}/api/complaints`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        category,
+        description,
+        incidentDate: date,
+        suspectInfo: {
+          platform: suspect.platform,
+          username: suspect.username,
+          url: suspect.url
+        },
+        evidenceFiles: evidence,
+        generateFir
+      })
+    }).then(async res => {
+      if (res.ok) {
+        await syncFromBackend();
+      }
+    }).catch(err => console.warn('Failed to submit backend complaint:', err));
+
     return compId;
   },
 
@@ -378,15 +546,12 @@ export const store = {
             phone: '+91 79263 01930'
           };
         }
-        
-        // Push notification message in chat thread
         const systemMsg = {
           id: `msg-${Date.now()}`,
           sender: 'officer' as const,
           text: `Notice: Case status has been updated to "${status.replace('_', ' ').toUpperCase()}".`,
           timestamp: new Date().toISOString()
         };
-
         return { 
           ...c, 
           status, 
@@ -398,6 +563,13 @@ export const store = {
       return c;
     });
     store.setComplaints(updated);
+
+    // Call backend
+    fetch(`${BASE_URL}/api/complaints/${id}/status`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status })
+    }).catch(err => console.warn('Failed to update complaint status:', err));
   },
 
   addComplaintMessage: (complaintId: string, sender: 'user' | 'officer', text: string) => {
@@ -421,6 +593,13 @@ export const store = {
       return c;
     });
     store.setComplaints(updated);
+
+    // Call backend
+    fetch(`${BASE_URL}/api/complaints/${complaintId}/messages`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ sender, text })
+    }).catch(err => console.warn('Failed to post comment to backend:', err));
   },
 
   finalizeFIR: (complaintId: string, text: string) => {
@@ -442,6 +621,13 @@ export const store = {
       return c;
     });
     store.setComplaints(updated);
+
+    // Call backend
+    fetch(`${BASE_URL}/api/complaints/${complaintId}/fir`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ sender: 'officer', text })
+    }).catch(err => console.warn('Failed to finalize FIR on backend:', err));
   },
 
   getDangerZones: () => getStoredItem<DangerZone[]>(STORE_KEYS.DANGER_ZONES, initialDangerZones),
@@ -519,7 +705,7 @@ export const store = {
         zone.current_users_inside = (zone.current_users_inside || 0) + 1;
 
         // Set entry warning alert banner
-        let localizedMsg = '';
+        let localizedMsg: string;
         if (zone.risk_level === 3) {
           localizedMsg = profile.lang === 'hi' ? `सावधानी: आप ${zone.name} (जोखिम क्षेत्र) में प्रवेश कर रही हैं।`
             : profile.lang === 'gu' ? `સાવચેતી: તમે ${zone.name} (જોખમી વિસ્તાર) માં પ્રવેશ કરી રહ્યા છો.`
