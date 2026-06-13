@@ -2,10 +2,11 @@ import { useState, useEffect } from 'react';
 import { 
   initialGuardians, 
   initialComplaints, 
-  mockLiveIncidents 
+  mockLiveIncidents,
+  initialMonitoredGirls
 } from './mockData';
-import type { Guardian, Complaint, LiveIncident } from './mockData';
-export type { Guardian, Complaint, LiveIncident };
+import type { Guardian, Complaint, LiveIncident, MonitoredGirl, GirlLocationVisit } from './mockData';
+export type { Guardian, Complaint, LiveIncident, MonitoredGirl, GirlLocationVisit };
 
 export interface UserProfile {
   name: string;
@@ -171,6 +172,66 @@ export const initialDangerZones: DangerZone[] = [
     risk_level: 3,
     zone_type: 'incident_triggered',
     current_users_inside: 0
+  },
+  {
+    id: 'zone-11',
+    name: 'Dumas Beach Stretch',
+    description: 'Isolated beach stretch with sparse patrolling and multiple evening harassment reports.',
+    area: 'Dumas Beach',
+    center_lat: 21.0750,
+    center_lng: 72.7150,
+    radius_meters: 800,
+    risk_level: 4,
+    zone_type: 'time_based',
+    current_users_inside: 0
+  },
+  {
+    id: 'zone-12',
+    name: 'Surat Railway Station Surroundings',
+    description: 'High crowded area near terminals with reported cases of stalking and theft after hours.',
+    area: 'Surat Station',
+    center_lat: 21.2050,
+    center_lng: 72.8400,
+    radius_meters: 500,
+    risk_level: 4,
+    zone_type: 'always_active',
+    current_users_inside: 0
+  },
+  {
+    id: 'zone-13',
+    name: 'Chowk Bazaar Market',
+    description: 'Congested market pathways with eve-teasing issues. Avoid late night walks.',
+    area: 'Chowk Bazaar',
+    center_lat: 21.1980,
+    center_lng: 72.8170,
+    radius_meters: 450,
+    risk_level: 3,
+    zone_type: 'time_based',
+    current_users_inside: 0
+  },
+  {
+    id: 'zone-14',
+    name: 'Varachha Diamond Market',
+    description: 'Very busy trading zone with cases of financial frauds and occasional harassment.',
+    area: 'Varachha',
+    center_lat: 21.2080,
+    center_lng: 72.8700,
+    radius_meters: 600,
+    risk_level: 3,
+    zone_type: 'time_based',
+    current_users_inside: 0
+  },
+  {
+    id: 'zone-15',
+    name: 'Adajan Isolated Lanes',
+    description: 'Silent and dark residential lanes. Reports of cyber harassment and local tracking incidents.',
+    area: 'Adajan',
+    center_lat: 21.1850,
+    center_lng: 72.7950,
+    radius_meters: 350,
+    risk_level: 4,
+    zone_type: 'incident_triggered',
+    current_users_inside: 0
   }
 ];
 
@@ -205,7 +266,8 @@ const STORE_KEYS = {
   ZONE_VISITS: 'shieldher_zone_visits',
   ACTIVE_ZONE_ALERT: 'shieldher_active_zone_alert',
   GEOFENCING_ENABLED: 'shieldher_geofencing_enabled',
-  USER_COORDS: 'shieldher_user_coords'
+  USER_COORDS: 'shieldher_user_coords',
+  MONITORED_GIRLS: 'shieldher_monitored_girls'
 };
 
 // Simple event-based pub-sub listener set for this tab
@@ -648,6 +710,125 @@ export const store = {
     store.updateUserLocation(coords.lat, coords.lng);
   },
 
+  getMonitoredGirls: () => getStoredItem<MonitoredGirl[]>(STORE_KEYS.MONITORED_GIRLS, initialMonitoredGirls),
+  setMonitoredGirls: (girls: MonitoredGirl[]) => {
+    setStoredItem(STORE_KEYS.MONITORED_GIRLS, girls);
+    fetch(`${BASE_URL}/api/police/monitored-girls`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(girls)
+    }).catch(err => console.warn('Failed to upload monitored girls to backend:', err));
+  },
+
+  updateGirlLocation: (id: string, lat: number, lng: number) => {
+    const girls = store.getMonitoredGirls();
+    const zones = store.getDangerZones();
+    const updated = girls.map(girl => {
+      if (girl.id === id) {
+        const history = [...girl.history];
+        let status: 'safe' | 'warning' | 'danger' = 'safe';
+        
+        const incidents = store.getLiveIncidents();
+        const activeIncident = incidents.find(inc => inc.phone === girl.phone && inc.status !== 'resolved');
+        if (activeIncident) {
+          status = 'danger';
+        }
+
+        let currentZoneName = '';
+        let currentZoneArea = '';
+        zones.forEach(zone => {
+          const dist = haversineDistance(lat, lng, zone.center_lat, zone.center_lng);
+          if (dist <= zone.radius_meters) {
+            if (status !== 'danger') {
+              status = 'warning';
+            }
+            currentZoneName = zone.name;
+            currentZoneArea = zone.area;
+          }
+        });
+
+        const lastVisit = history[history.length - 1];
+        
+        if (currentZoneName) {
+          if (!lastVisit || lastVisit.exitedAt || lastVisit.locationName !== currentZoneName) {
+            if (lastVisit && !lastVisit.exitedAt) {
+              lastVisit.exitedAt = new Date().toISOString();
+              const durationMs = new Date(lastVisit.exitedAt).getTime() - new Date(lastVisit.enteredAt).getTime();
+              lastVisit.durationMinutes = Math.max(1, Math.round(durationMs / 60000));
+            }
+            
+            history.push({
+              id: `v-${Math.floor(1000 + Math.random() * 9000)}`,
+              locationName: currentZoneName,
+              area: currentZoneArea,
+              enteredAt: new Date().toISOString(),
+              durationMinutes: 1
+            });
+          } else {
+            const durationMs = Date.now() - new Date(lastVisit.enteredAt).getTime();
+            lastVisit.durationMinutes = Math.max(1, Math.round(durationMs / 60000));
+          }
+        } else {
+          if (lastVisit && !lastVisit.exitedAt) {
+            lastVisit.exitedAt = new Date().toISOString();
+            const durationMs = new Date(lastVisit.exitedAt).getTime() - new Date(lastVisit.enteredAt).getTime();
+            lastVisit.durationMinutes = Math.max(1, Math.round(durationMs / 60000));
+          }
+        }
+
+        return {
+          ...girl,
+          latitude: lat,
+          longitude: lng,
+          status,
+          lastSeen: new Date().toISOString(),
+          history
+        };
+      }
+      return girl;
+    });
+    store.setMonitoredGirls(updated);
+    
+    fetch(`${BASE_URL}/api/police/monitored-girls/${id}/location`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ latitude: lat, longitude: lng })
+    }).catch(err => console.warn('Failed to update girl location on backend:', err));
+  },
+
+  triggerGirlSOS: (id: string) => {
+    const girls = store.getMonitoredGirls();
+    const girl = girls.find(g => g.id === id);
+    if (!girl) return;
+
+    const incidents = store.getLiveIncidents();
+    const newIncId = `inc-${Math.floor(1000 + Math.random() * 9000)}`;
+    const newIncident: LiveIncident = {
+      id: newIncId,
+      userName: girl.name,
+      phone: girl.phone,
+      latitude: girl.latitude,
+      longitude: girl.longitude,
+      accuracy: 5,
+      triggerType: 'button',
+      status: 'active',
+      createdAt: new Date().toISOString()
+    };
+    store.setLiveIncidents([newIncident, ...incidents]);
+
+    const updated = girls.map(g => {
+      if (g.id === id) {
+        return { ...g, status: 'danger' as const };
+      }
+      return g;
+    });
+    store.setMonitoredGirls(updated);
+
+    fetch(`${BASE_URL}/api/police/monitored-girls/${id}/sos`, {
+      method: 'POST'
+    }).catch(err => console.warn('Failed to trigger girl SOS on backend:', err));
+  },
+
   updateProfileLanguage: (lang: string) => {
     const profile = store.getProfile();
     store.setProfile({ ...profile, lang });
@@ -948,3 +1129,28 @@ export function useUserCoords() {
 
   return [coords, updateCoords] as const;
 }
+
+export function useMonitoredGirls() {
+  const [girls, setGirlsState] = useState(() => store.getMonitoredGirls());
+
+  useEffect(() => {
+    const handler = () => setGirlsState(store.getMonitoredGirls());
+    listeners.add(handler);
+    window.addEventListener('storage', handler);
+    return () => {
+      listeners.delete(handler);
+      window.removeEventListener('storage', handler);
+    };
+  }, []);
+
+  const updateGirlLocation = (id: string, lat: number, lng: number) => {
+    store.updateGirlLocation(id, lat, lng);
+  };
+
+  const triggerGirlSOS = (id: string) => {
+    store.triggerGirlSOS(id);
+  };
+
+  return [girls, updateGirlLocation, triggerGirlSOS] as const;
+}
+

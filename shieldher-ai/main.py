@@ -174,6 +174,186 @@ def seed_db():
             )
             session.add(c2)
         
+        # Seed Monitored Girls
+        monitored_exists = session.query(db_models.DBMonitoredGirl).first()
+        if not monitored_exists:
+            import datetime
+            now_iso = datetime.datetime.utcnow().isoformat() + "Z"
+            
+            girls_data = [
+                # Ahmedabad Monitored Girls (10)
+                {
+                    "id": "girl-1", "name": "Ananya Rao", "phone": "+91 98980 12345",
+                    "latitude": 23.0370, "longitude": 72.5280, "status": "safe", "lastSeen": now_iso,
+                    "avatarColor": "from-emerald-500 to-teal-605",
+                    "history": [
+                        {"id": "v-101", "locationName": "Lal Darwaja Bus Stand", "area": "Lal Darwaja", "enteredAt": now_iso, "exitedAt": now_iso, "durationMinutes": 24},
+                        {"id": "v-102", "locationName": "Vastrapur Residential Lanes", "area": "Vastrapur", "enteredAt": now_iso, "exitedAt": now_iso, "durationMinutes": 60}
+                    ]
+                },
+                {
+                    "id": "girl-2", "name": "Kriti Sen", "phone": "+91 91234 56789",
+                    "latitude": 23.0305, "longitude": 72.5624, "status": "danger", "lastSeen": now_iso,
+                    "avatarColor": "from-rose-500 to-red-600",
+                    "history": [
+                        {"id": "v-201", "locationName": "Mithakhali Area Stretch", "area": "Mithakhali", "enteredAt": now_iso, "durationMinutes": 30}
+                    ]
+                },
+                {
+                    "id": "girl-3", "name": "Nisha Vyas", "phone": "+91 92345 67890",
+                    "latitude": 23.0125, "longitude": 72.5914, "status": "danger", "lastSeen": now_iso,
+                    "avatarColor": "from-pink-500 to-rose-600",
+                    "history": [
+                        {"id": "v-301", "locationName": "Maninagar Station Back Lanes", "area": "Maninagar", "enteredAt": now_iso, "durationMinutes": 8}
+                    ]
+                },
+                {
+                    "id": "girl-4", "name": "Priya Sharma", "phone": "+91 98765 43210",
+                    "latitude": 23.0338, "longitude": 72.5250, "status": "safe", "lastSeen": now_iso,
+                    "avatarColor": "from-violet-500 to-purple-600",
+                    "history": [
+                        {"id": "v-401", "locationName": "Shahpur Residential Lanes", "area": "Shahpur", "enteredAt": now_iso, "exitedAt": now_iso, "durationMinutes": 42}
+                    ]
+                },
+                {
+                    "id": "girl-5", "name": "Meera Mehta", "phone": "+91 94567 89012",
+                    "latitude": 23.0185, "longitude": 72.6185, "status": "warning", "lastSeen": now_iso,
+                    "avatarColor": "from-amber-500 to-orange-600",
+                    "history": [
+                        {"id": "v-501", "locationName": "Gomtipur Industrial Zone", "area": "Gomtipur", "enteredAt": now_iso, "durationMinutes": 15}
+                    ]
+                },
+                {
+                    "id": "girl-6", "name": "Riddhi Patel", "phone": "+91 95678 90123",
+                    "latitude": 23.02686, "longitude": 72.59900, "status": "warning", "lastSeen": now_iso,
+                    "avatarColor": "from-yellow-500 to-amber-600",
+                    "history": [
+                        {"id": "v-601", "locationName": "Kalupur Railway Station Surroundings", "area": "Kalupur", "enteredAt": now_iso, "durationMinutes": 40}
+                    ]
+                },
+                {
+                    "id": "girl-7", "name": "Sneha Gupta", "phone": "+91 96789 01234",
+                    "latitude": 23.02140, "longitude": 72.58640, "status": "warning", "lastSeen": now_iso,
+                    "avatarColor": "from-orange-500 to-red-500",
+                    "history": [
+                        {"id": "v-701", "locationName": "Lal Darwaja Bus Stand", "area": "Lal Darwaja", "enteredAt": now_iso, "durationMinutes": 25}
+                    ]
+                },
+                {
+                    "id": "girl-8", "name": "Aditi Shah", "phone": "+91 97890 12345",
+                    "latitude": 22.98200, "longitude": 72.62450, "status": "warning", "lastSeen": now_iso,
+                    "avatarColor": "from-yellow-400 to-orange-500",
+                    "history": [
+                        {"id": "v-801", "locationName": "Isanpur Night Market Area", "area": "Isanpur", "enteredAt": now_iso, "durationMinutes": 12}
+                    ]
+                },
+                {
+                    "id": "girl-9", "name": "Diya Sharma", "phone": "+91 98901 23456",
+                    "latitude": 23.03000, "longitude": 72.58100, "status": "warning", "lastSeen": now_iso,
+                    "avatarColor": "from-amber-650 to-rose-500",
+                    "history": [
+                        {"id": "v-901", "locationName": "Shahpur Residential Lanes", "area": "Shahpur", "enteredAt": now_iso, "durationMinutes": 30}
+                    ]
+                },
+                {
+                    "id": "girl-10", "name": "Tanvi Joshi", "phone": "+91 99012 34567",
+                    "latitude": 22.96800, "longitude": 72.64200, "status": "warning", "lastSeen": now_iso,
+                    "avatarColor": "from-orange-600 to-rose-600",
+                    "history": [
+                        {"id": "v-1001", "locationName": "Vatva GIDC Industrial Area", "area": "Vatva", "enteredAt": now_iso, "durationMinutes": 50}
+                    ]
+                },
+                # Surat Monitored Girls (10)
+                {
+                    "id": "girl-11", "name": "Kavya Desai", "phone": "+91 91111 22222",
+                    "latitude": 21.1980, "longitude": 72.8170, "status": "warning", "lastSeen": now_iso,
+                    "avatarColor": "from-amber-500 to-orange-600",
+                    "history": [
+                        {"id": "v-1101", "locationName": "Chowk Bazaar Market", "area": "Chowk Bazaar", "enteredAt": now_iso, "durationMinutes": 15}
+                    ]
+                },
+                {
+                    "id": "girl-12", "name": "Kiara Shah", "phone": "+91 92222 33333",
+                    "latitude": 21.2050, "longitude": 72.8400, "status": "danger", "lastSeen": now_iso,
+                    "avatarColor": "from-rose-500 to-red-600",
+                    "history": [
+                        {"id": "v-1201", "locationName": "Surat Railway Station Surroundings", "area": "Surat Station", "enteredAt": now_iso, "durationMinutes": 10}
+                    ]
+                },
+                {
+                    "id": "girl-13", "name": "Nehal Patel", "phone": "+91 93333 44444",
+                    "latitude": 21.0750, "longitude": 72.7150, "status": "warning", "lastSeen": now_iso,
+                    "avatarColor": "from-yellow-500 to-amber-600",
+                    "history": [
+                        {"id": "v-1301", "locationName": "Dumas Beach Stretch", "area": "Dumas Beach", "enteredAt": now_iso, "durationMinutes": 45}
+                    ]
+                },
+                {
+                    "id": "girl-14", "name": "Shruti Verma", "phone": "+91 94444 55555",
+                    "latitude": 21.2080, "longitude": 72.8700, "status": "warning", "lastSeen": now_iso,
+                    "avatarColor": "from-orange-500 to-red-500",
+                    "history": [
+                        {"id": "v-1401", "locationName": "Varachha Diamond Market", "area": "Varachha", "enteredAt": now_iso, "durationMinutes": 30}
+                    ]
+                },
+                {
+                    "id": "girl-15", "name": "Aaradhya Mishra", "phone": "+91 95555 66666",
+                    "latitude": 21.1850, "longitude": 72.7950, "status": "warning", "lastSeen": now_iso,
+                    "avatarColor": "from-amber-600 to-rose-600",
+                    "history": [
+                        {"id": "v-1501", "locationName": "Adajan Isolated Lanes", "area": "Adajan", "enteredAt": now_iso, "durationMinutes": 22}
+                    ]
+                },
+                {
+                    "id": "girl-16", "name": "Payal Solanki", "phone": "+91 96666 77777",
+                    "latitude": 21.2250, "longitude": 72.8250, "status": "safe", "lastSeen": now_iso,
+                    "avatarColor": "from-emerald-500 to-teal-600",
+                    "history": [
+                        {"id": "v-1601", "locationName": "Adajan Isolated Lanes", "area": "Adajan", "enteredAt": now_iso, "exitedAt": now_iso, "durationMinutes": 30}
+                    ]
+                },
+                {
+                    "id": "girl-17", "name": "Isha Joshi", "phone": "+91 97777 88888",
+                    "latitude": 21.1550, "longitude": 72.8450, "status": "safe", "lastSeen": now_iso,
+                    "avatarColor": "from-indigo-500 to-blue-600",
+                    "history": [
+                        {"id": "v-1701", "locationName": "Chowk Bazaar Market", "area": "Chowk Bazaar", "enteredAt": now_iso, "exitedAt": now_iso, "durationMinutes": 30}
+                    ]
+                },
+                {
+                    "id": "girl-18", "name": "Mansi Singhal", "phone": "+91 98888 99999",
+                    "latitude": 21.1350, "longitude": 72.7850, "status": "safe", "lastSeen": now_iso,
+                    "avatarColor": "from-teal-500 to-cyan-600",
+                    "history": []
+                },
+                {
+                    "id": "girl-19", "name": "Gauri Trivedi", "phone": "+91 99999 00000",
+                    "latitude": 21.1650, "longitude": 72.7750, "status": "safe", "lastSeen": now_iso,
+                    "avatarColor": "from-violet-500 to-purple-600",
+                    "history": []
+                },
+                {
+                    "id": "girl-20", "name": "Rhea Kapoor", "phone": "+91 90000 11111",
+                    "latitude": 21.2150, "longitude": 72.7850, "status": "safe", "lastSeen": now_iso,
+                    "avatarColor": "from-pink-500 to-rose-600",
+                    "history": []
+                }
+            ]
+            
+            for g in girls_data:
+                db_g = db_models.DBMonitoredGirl(
+                    id=g["id"],
+                    name=g["name"],
+                    phone=g["phone"],
+                    latitude=g["latitude"],
+                    longitude=g["longitude"],
+                    status=g["status"],
+                    lastSeen=g["lastSeen"],
+                    avatarColor=g["avatarColor"],
+                    history=json.dumps(g["history"])
+                )
+                session.add(db_g)
+
         session.commit()
     finally:
         session.close()
@@ -699,3 +879,207 @@ async def scan_url(req: URLRequest):
         "reasons": reasons,
         "confidence": phishing_prob
     }
+
+@app.get("/api/police/monitored-girls")
+async def get_monitored_girls(db: Session = Depends(get_db)):
+    girls = db.query(db_models.DBMonitoredGirl).all()
+    res = []
+    for g in girls:
+        res.append({
+            "id": g.id,
+            "name": g.name,
+            "phone": g.phone,
+            "latitude": g.latitude,
+            "longitude": g.longitude,
+            "status": g.status,
+            "lastSeen": g.lastSeen,
+            "avatarColor": g.avatarColor,
+            "history": json.loads(g.history) if g.history else []
+        })
+    return res
+
+@app.post("/api/police/monitored-girls")
+async def save_monitored_girls(req: List[schemas.MonitoredGirlSchema], db: Session = Depends(get_db)):
+    db.query(db_models.DBMonitoredGirl).delete()
+    for g in req:
+        db_g = db_models.DBMonitoredGirl(
+            id=g.id,
+            name=g.name,
+            phone=g.phone,
+            latitude=g.latitude,
+            longitude=g.longitude,
+            status=g.status,
+            lastSeen=g.lastSeen,
+            avatarColor=g.avatarColor,
+            history=json.dumps([h.dict() for h in g.history])
+        )
+        db.add(db_g)
+    db.commit()
+    return {"success": True}
+
+@app.put("/api/police/monitored-girls/{id}/location")
+async def update_monitored_girl_location(id: str, req: schemas.LocationUpdateSchema, db: Session = Depends(get_db)):
+    girl = db.query(db_models.DBMonitoredGirl).filter(db_models.DBMonitoredGirl.id == id).first()
+    if not girl:
+        raise HTTPException(status_code=404, detail="Monitored profile not found")
+    
+    girl.latitude = req.latitude
+    girl.longitude = req.longitude
+    import datetime
+    girl.lastSeen = datetime.datetime.utcnow().isoformat() + "Z"
+    
+    # Predefined danger zones matching store.ts:
+    DANGER_ZONES = [
+        {"name": "Kalupur Railway Station Surroundings", "area": "Kalupur", "lat": 23.02686, "lng": 72.59900, "radius": 600, "risk": 4},
+        {"name": "Lal Darwaja Bus Stand", "area": "Lal Darwaja", "lat": 23.02140, "lng": 72.58640, "radius": 450, "risk": 3},
+        {"name": "Gomtipur Industrial Zone", "area": "Gomtipur", "lat": 23.01900, "lng": 72.61900, "radius": 700, "risk": 4},
+        {"name": "Isanpur Night Market Area", "area": "Isanpur", "lat": 22.98200, "lng": 72.62450, "radius": 400, "risk": 3},
+        {"name": "Rakhial Road Underpass", "area": "Rakhial", "lat": 23.04800, "lng": 72.62100, "radius": 300, "risk": 5},
+        {"name": "Shahpur Residential Lanes", "area": "Shahpur", "lat": 23.03000, "lng": 72.58100, "radius": 350, "risk": 4},
+        {"name": "Vatva GIDC Industrial Area", "area": "Vatva", "lat": 22.96800, "lng": 72.64200, "radius": 800, "risk": 4},
+        {"name": "Narol Highway Isolated Stretch", "area": "Narol", "lat": 22.95400, "lng": 72.62600, "radius": 900, "risk": 3},
+        {"name": "Maninagar Station Back Lanes", "area": "Maninagar", "lat": 22.99850, "lng": 72.59870, "radius": 400, "risk": 3},
+        {"name": "Behrampura Isolated Block", "area": "Behrampura", "lat": 23.00100, "lng": 72.60500, "radius": 500, "risk": 3},
+        # Surat Danger Zones
+        {"name": "Dumas Beach Stretch", "area": "Dumas Beach", "lat": 21.0750, "lng": 72.7150, "radius": 800, "risk": 4},
+        {"name": "Surat Railway Station Surroundings", "area": "Surat Station", "lat": 21.2050, "lng": 72.8400, "radius": 500, "risk": 4},
+        {"name": "Chowk Bazaar Market", "area": "Chowk Bazaar", "lat": 21.1980, "lng": 72.8170, "radius": 450, "risk": 3},
+        {"name": "Varachha Diamond Market", "area": "Varachha", "lat": 21.2080, "lng": 72.8700, "radius": 600, "risk": 3},
+        {"name": "Adajan Isolated Lanes", "area": "Adajan", "lat": 21.1850, "lng": 72.7950, "radius": 350, "risk": 4}
+    ]
+
+    import math
+    def haversine(lat1, lon1, lat2, lon2):
+        R = 6371000 # meters
+        phi1 = math.radians(lat1)
+        phi2 = math.radians(lat2)
+        dphi = math.radians(lat2 - lat1)
+        dlambda = math.radians(lon2 - lon1)
+        a = math.sin(dphi/2)**2 + math.cos(phi1)*math.cos(phi2)*math.sin(dlambda/2)**2
+        return R * 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
+
+    current_zone = None
+    for zone in DANGER_ZONES:
+        dist = haversine(req.latitude, req.longitude, zone["lat"], zone["lng"])
+        if dist <= zone["radius"]:
+            current_zone = zone
+            break
+
+    # Load history
+    history = json.loads(girl.history) if girl.history else []
+    
+    # Check if SOS active
+    active_inc = db.query(db_models.DBLiveIncident).filter(
+        db_models.DBLiveIncident.phone == girl.phone,
+        db_models.DBLiveIncident.status != "resolved"
+    ).first()
+    
+    status = "safe"
+    if active_inc:
+        status = "danger"
+    elif current_zone:
+        status = "warning"
+
+    girl.status = status
+
+    # Process visits
+    last_visit = history[-1] if history else None
+    if current_zone:
+        if not last_visit or last_visit.get("exitedAt") or last_visit.get("locationName") != current_zone["name"]:
+            if last_visit and not last_visit.get("exitedAt"):
+                last_visit["exitedAt"] = girl.lastSeen
+                try:
+                    entered = datetime.datetime.fromisoformat(last_visit["enteredAt"].replace("Z", ""))
+                    exited = datetime.datetime.fromisoformat(last_visit["exitedAt"].replace("Z", ""))
+                    last_visit["durationMinutes"] = max(1, int((exited - entered).total_seconds() / 60))
+                except Exception:
+                    last_visit["durationMinutes"] = 5
+            
+            history.append({
+                "id": f"v-{random.randint(1000, 9999)}",
+                "locationName": current_zone["name"],
+                "area": current_zone["area"],
+                "enteredAt": girl.lastSeen,
+                "durationMinutes": 1
+            })
+        else:
+            try:
+                entered = datetime.datetime.fromisoformat(last_visit["enteredAt"].replace("Z", ""))
+                now_time = datetime.datetime.utcnow()
+                last_visit["durationMinutes"] = max(1, int((now_time - entered).total_seconds() / 60))
+            except Exception:
+                pass
+    else:
+        if last_visit and not last_visit.get("exitedAt"):
+            last_visit["exitedAt"] = girl.lastSeen
+            try:
+                entered = datetime.datetime.fromisoformat(last_visit["enteredAt"].replace("Z", ""))
+                exited = datetime.datetime.fromisoformat(last_visit["exitedAt"].replace("Z", ""))
+                last_visit["durationMinutes"] = max(1, int((exited - entered).total_seconds() / 60))
+            except Exception:
+                last_visit["durationMinutes"] = 5
+
+    girl.history = json.dumps(history)
+    db.commit()
+    
+    await manager.broadcast({
+        "type": "GIRL_LOCATION_UPDATE",
+        "id": id,
+        "latitude": req.latitude,
+        "longitude": req.longitude,
+        "status": status,
+        "history": history
+    })
+    
+    return {"success": True}
+
+@app.post("/api/police/monitored-girls/{id}/sos")
+async def trigger_monitored_girl_sos(id: str, db: Session = Depends(get_db)):
+    girl = db.query(db_models.DBMonitoredGirl).filter(db_models.DBMonitoredGirl.id == id).first()
+    if not girl:
+        raise HTTPException(status_code=404, detail="Monitored profile not found")
+    
+    girl.status = "danger"
+    import datetime
+    girl.lastSeen = datetime.datetime.utcnow().isoformat() + "Z"
+    
+    inc_id = f"inc-{random.randint(1000, 9999)}"
+    new_inc = db_models.DBLiveIncident(
+        id=inc_id,
+        userName=girl.name,
+        phone=girl.phone,
+        latitude=girl.latitude,
+        longitude=girl.longitude,
+        accuracy=5.0,
+        triggerType="button",
+        status="active",
+        createdAt=girl.lastSeen
+    )
+    db.add(new_inc)
+    db.commit()
+    
+    incident_dict = {
+        "id": new_inc.id,
+        "userName": new_inc.userName,
+        "phone": new_inc.phone,
+        "latitude": new_inc.latitude,
+        "longitude": new_inc.longitude,
+        "accuracy": new_inc.accuracy,
+        "triggerType": new_inc.triggerType,
+        "status": new_inc.status,
+        "createdAt": new_inc.createdAt
+    }
+    
+    await manager.broadcast({
+        "type": "SOS_TRIGGERED",
+        "incident": incident_dict
+    })
+    
+    await manager.broadcast({
+        "type": "GIRL_STATUS_UPDATE",
+        "id": id,
+        "status": "danger"
+    })
+    
+    return {"success": True, "incidentId": inc_id}
+

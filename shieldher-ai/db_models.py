@@ -57,3 +57,17 @@ class DBLiveIncident(Base):
     status = Column(String, default="active") # 'active', 'responding', 'resolved'
     assignedOfficerId = Column(String, nullable=True)
     createdAt = Column(String)
+
+class DBMonitoredGirl(Base):
+    __tablename__ = "monitored_girls"
+
+    id = Column(String, primary_key=True, index=True)
+    name = Column(String, index=True)
+    phone = Column(String)
+    latitude = Column(Float)
+    longitude = Column(Float)
+    status = Column(String, default="safe")
+    lastSeen = Column(String)
+    avatarColor = Column(String)
+    history = Column(String) # JSON list
+

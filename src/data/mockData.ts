@@ -236,3 +236,400 @@ export const getProfileScanResult = (profileUrl: string) => {
     ]
   };
 };
+
+export interface GirlLocationVisit {
+  id: string;
+  locationName: string;
+  area: string;
+  enteredAt: string;
+  exitedAt?: string;
+  durationMinutes?: number;
+}
+
+export interface MonitoredGirl {
+  id: string;
+  name: string;
+  phone: string;
+  latitude: number;
+  longitude: number;
+  status: 'safe' | 'warning' | 'danger';
+  lastSeen: string;
+  avatarColor: string;
+  history: GirlLocationVisit[];
+}
+
+export const initialMonitoredGirls: MonitoredGirl[] = [
+  // Ahmedabad Monitored Girls (10)
+  {
+    id: 'girl-1',
+    name: 'Ananya Rao',
+    phone: '+91 98980 12345',
+    latitude: 23.0370,
+    longitude: 72.5280,
+    status: 'safe',
+    lastSeen: new Date().toISOString(),
+    avatarColor: 'from-emerald-500 to-teal-605',
+    history: [
+      {
+        id: 'v-101',
+        locationName: 'Lal Darwaja Bus Stand',
+        area: 'Lal Darwaja',
+        enteredAt: new Date(Date.now() - 4 * 3600000).toISOString(),
+        exitedAt: new Date(Date.now() - 3.6 * 3600000).toISOString(),
+        durationMinutes: 24
+      },
+      {
+        id: 'v-102',
+        locationName: 'Vastrapur Residential Lanes',
+        area: 'Vastrapur',
+        enteredAt: new Date(Date.now() - 2 * 3600000).toISOString(),
+        exitedAt: new Date(Date.now() - 1 * 3600000).toISOString(),
+        durationMinutes: 60
+      }
+    ]
+  },
+  {
+    id: 'girl-2',
+    name: 'Kriti Sen',
+    phone: '+91 91234 56789',
+    latitude: 23.0305,
+    longitude: 72.5624,
+    status: 'danger',
+    lastSeen: new Date().toISOString(),
+    avatarColor: 'from-rose-500 to-red-600',
+    history: [
+      {
+        id: 'v-201',
+        locationName: 'Mithakhali Area Stretch',
+        area: 'Mithakhali',
+        enteredAt: new Date(Date.now() - 30 * 60000).toISOString(),
+        durationMinutes: 30
+      }
+    ]
+  },
+  {
+    id: 'girl-3',
+    name: 'Nisha Vyas',
+    phone: '+91 92345 67890',
+    latitude: 23.0125,
+    longitude: 72.5914,
+    status: 'danger',
+    lastSeen: new Date().toISOString(),
+    avatarColor: 'from-pink-500 to-rose-600',
+    history: [
+      {
+        id: 'v-301',
+        locationName: 'Maninagar Station Back Lanes',
+        area: 'Maninagar',
+        enteredAt: new Date(Date.now() - 8 * 60000).toISOString(),
+        durationMinutes: 8
+      }
+    ]
+  },
+  {
+    id: 'girl-4',
+    name: 'Priya Sharma',
+    phone: '+91 98765 43210',
+    latitude: 23.0338,
+    longitude: 72.5250,
+    status: 'safe',
+    lastSeen: new Date().toISOString(),
+    avatarColor: 'from-violet-500 to-purple-600',
+    history: [
+      {
+        id: 'v-401',
+        locationName: 'Shahpur Residential Lanes',
+        area: 'Shahpur',
+        enteredAt: new Date(Date.now() - 5 * 3600000).toISOString(),
+        exitedAt: new Date(Date.now() - 4.3 * 3600000).toISOString(),
+        durationMinutes: 42
+      }
+    ]
+  },
+  {
+    id: 'girl-5',
+    name: 'Meera Mehta',
+    phone: '+91 94567 89012',
+    latitude: 23.0185,
+    longitude: 72.6185,
+    status: 'warning',
+    lastSeen: new Date().toISOString(),
+    avatarColor: 'from-amber-500 to-orange-600',
+    history: [
+      {
+        id: 'v-501',
+        locationName: 'Gomtipur Industrial Zone',
+        area: 'Gomtipur',
+        enteredAt: new Date(Date.now() - 15 * 60000).toISOString(),
+        durationMinutes: 15
+      }
+    ]
+  },
+  {
+    id: 'girl-6',
+    name: 'Riddhi Patel',
+    phone: '+91 95678 90123',
+    latitude: 23.02686,
+    longitude: 72.59900,
+    status: 'warning',
+    lastSeen: new Date().toISOString(),
+    avatarColor: 'from-yellow-500 to-amber-600',
+    history: [
+      {
+        id: 'v-601',
+        locationName: 'Kalupur Railway Station Surroundings',
+        area: 'Kalupur',
+        enteredAt: new Date(Date.now() - 40 * 60000).toISOString(),
+        durationMinutes: 40
+      }
+    ]
+  },
+  {
+    id: 'girl-7',
+    name: 'Sneha Gupta',
+    phone: '+91 96789 01234',
+    latitude: 23.02140,
+    longitude: 72.58640,
+    status: 'warning',
+    lastSeen: new Date().toISOString(),
+    avatarColor: 'from-orange-500 to-red-500',
+    history: [
+      {
+        id: 'v-701',
+        locationName: 'Lal Darwaja Bus Stand',
+        area: 'Lal Darwaja',
+        enteredAt: new Date(Date.now() - 25 * 60000).toISOString(),
+        durationMinutes: 25
+      }
+    ]
+  },
+  {
+    id: 'girl-8',
+    name: 'Aditi Shah',
+    phone: '+91 97890 12345',
+    latitude: 22.98200,
+    longitude: 72.62450,
+    status: 'warning',
+    lastSeen: new Date().toISOString(),
+    avatarColor: 'from-yellow-400 to-orange-500',
+    history: [
+      {
+        id: 'v-801',
+        locationName: 'Isanpur Night Market Area',
+        area: 'Isanpur',
+        enteredAt: new Date(Date.now() - 12 * 60000).toISOString(),
+        durationMinutes: 12
+      }
+    ]
+  },
+  {
+    id: 'girl-9',
+    name: 'Diya Sharma',
+    phone: '+91 98901 23456',
+    latitude: 23.03000,
+    longitude: 72.58100,
+    status: 'warning',
+    lastSeen: new Date().toISOString(),
+    avatarColor: 'from-amber-650 to-rose-500',
+    history: [
+      {
+        id: 'v-901',
+        locationName: 'Shahpur Residential Lanes',
+        area: 'Shahpur',
+        enteredAt: new Date(Date.now() - 30 * 60000).toISOString(),
+        durationMinutes: 30
+      }
+    ]
+  },
+  {
+    id: 'girl-10',
+    name: 'Tanvi Joshi',
+    phone: '+91 99012 34567',
+    latitude: 22.96800,
+    longitude: 72.64200,
+    status: 'warning',
+    lastSeen: new Date().toISOString(),
+    avatarColor: 'from-orange-600 to-rose-600',
+    history: [
+      {
+        id: 'v-1001',
+        locationName: 'Vatva GIDC Industrial Area',
+        area: 'Vatva',
+        enteredAt: new Date(Date.now() - 50 * 60000).toISOString(),
+        durationMinutes: 50
+      }
+    ]
+  },
+
+  // Surat Monitored Girls (10)
+  {
+    id: 'girl-11',
+    name: 'Kavya Desai',
+    phone: '+91 91111 22222',
+    latitude: 21.1980,
+    longitude: 72.8170,
+    status: 'warning',
+    lastSeen: new Date().toISOString(),
+    avatarColor: 'from-amber-500 to-orange-600',
+    history: [
+      {
+        id: 'v-1101',
+        locationName: 'Chowk Bazaar Market',
+        area: 'Chowk Bazaar',
+        enteredAt: new Date(Date.now() - 15 * 60000).toISOString(),
+        durationMinutes: 15
+      }
+    ]
+  },
+  {
+    id: 'girl-12',
+    name: 'Kiara Shah',
+    phone: '+91 92222 33333',
+    latitude: 21.2050,
+    longitude: 72.8400,
+    status: 'danger',
+    lastSeen: new Date().toISOString(),
+    avatarColor: 'from-rose-500 to-red-600',
+    history: [
+      {
+        id: 'v-1201',
+        locationName: 'Surat Railway Station Surroundings',
+        area: 'Surat Station',
+        enteredAt: new Date(Date.now() - 10 * 60000).toISOString(),
+        durationMinutes: 10
+      }
+    ]
+  },
+  {
+    id: 'girl-13',
+    name: 'Nehal Patel',
+    phone: '+91 93333 44444',
+    latitude: 21.0750,
+    longitude: 72.7150,
+    status: 'warning',
+    lastSeen: new Date().toISOString(),
+    avatarColor: 'from-yellow-500 to-amber-600',
+    history: [
+      {
+        id: 'v-1301',
+        locationName: 'Dumas Beach Stretch',
+        area: 'Dumas Beach',
+        enteredAt: new Date(Date.now() - 45 * 60000).toISOString(),
+        durationMinutes: 45
+      }
+    ]
+  },
+  {
+    id: 'girl-14',
+    name: 'Shruti Verma',
+    phone: '+91 94444 55555',
+    latitude: 21.2080,
+    longitude: 72.8700,
+    status: 'warning',
+    lastSeen: new Date().toISOString(),
+    avatarColor: 'from-orange-500 to-red-500',
+    history: [
+      {
+        id: 'v-1401',
+        locationName: 'Varachha Diamond Market',
+        area: 'Varachha',
+        enteredAt: new Date(Date.now() - 30 * 60000).toISOString(),
+        durationMinutes: 30
+      }
+    ]
+  },
+  {
+    id: 'girl-15',
+    name: 'Aaradhya Mishra',
+    phone: '+91 95555 66666',
+    latitude: 21.1850,
+    longitude: 72.7950,
+    status: 'warning',
+    lastSeen: new Date().toISOString(),
+    avatarColor: 'from-amber-600 to-rose-600',
+    history: [
+      {
+        id: 'v-1501',
+        locationName: 'Adajan Isolated Lanes',
+        area: 'Adajan',
+        enteredAt: new Date(Date.now() - 22 * 60000).toISOString(),
+        durationMinutes: 22
+      }
+    ]
+  },
+  {
+    id: 'girl-16',
+    name: 'Payal Solanki',
+    phone: '+91 96666 77777',
+    latitude: 21.2250,
+    longitude: 72.8250,
+    status: 'safe',
+    lastSeen: new Date().toISOString(),
+    avatarColor: 'from-emerald-500 to-teal-600',
+    history: [
+      {
+        id: 'v-1601',
+        locationName: 'Adajan Isolated Lanes',
+        area: 'Adajan',
+        enteredAt: new Date(Date.now() - 3 * 3600000).toISOString(),
+        exitedAt: new Date(Date.now() - 2.5 * 3600000).toISOString(),
+        durationMinutes: 30
+      }
+    ]
+  },
+  {
+    id: 'girl-17',
+    name: 'Isha Joshi',
+    phone: '+91 97777 88888',
+    latitude: 21.1550,
+    longitude: 72.8450,
+    status: 'safe',
+    lastSeen: new Date().toISOString(),
+    avatarColor: 'from-indigo-500 to-blue-600',
+    history: [
+      {
+        id: 'v-1701',
+        locationName: 'Chowk Bazaar Market',
+        area: 'Chowk Bazaar',
+        enteredAt: new Date(Date.now() - 2 * 3600000).toISOString(),
+        exitedAt: new Date(Date.now() - 1.5 * 3600000).toISOString(),
+        durationMinutes: 30
+      }
+    ]
+  },
+  {
+    id: 'girl-18',
+    name: 'Mansi Singhal',
+    phone: '+91 98888 99999',
+    latitude: 21.1350,
+    longitude: 72.7850,
+    status: 'safe',
+    lastSeen: new Date().toISOString(),
+    avatarColor: 'from-teal-500 to-cyan-600',
+    history: []
+  },
+  {
+    id: 'girl-19',
+    name: 'Gauri Trivedi',
+    phone: '+91 99999 00000',
+    latitude: 21.1650,
+    longitude: 72.7750,
+    status: 'safe',
+    lastSeen: new Date().toISOString(),
+    avatarColor: 'from-violet-500 to-purple-600',
+    history: []
+  },
+  {
+    id: 'girl-20',
+    name: 'Rhea Kapoor',
+    phone: '+91 90000 11111',
+    latitude: 21.2150,
+    longitude: 72.7850,
+    status: 'safe',
+    lastSeen: new Date().toISOString(),
+    avatarColor: 'from-pink-500 to-rose-600',
+    history: []
+  }
+];
+
+

@@ -1,5 +1,5 @@
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
-import { ShieldAlert, LayoutDashboard, FolderKanban, BarChart3, Users, LogOut } from 'lucide-react';
+import { ShieldAlert, LayoutDashboard, FolderKanban, BarChart3, Users, LogOut, Map } from 'lucide-react';
 import { useEffect } from 'react';
 import { useUserProfile, store, initWebSocket } from '../../data/store';
 
@@ -20,6 +20,7 @@ export default function PoliceLayout() {
 
   const menuItems = [
     { path: '/police', label: 'Incident Desk', icon: LayoutDashboard },
+    { path: '/police/tracking', label: 'Citizen Tracker', icon: Map },
     { path: '/police/cases', label: 'Case Queue', icon: FolderKanban },
     { path: '/police/analytics', label: 'Analytics Center', icon: BarChart3 },
     { path: '/police/suspects', label: 'Repeat Offenders', icon: Users }

@@ -25,6 +25,7 @@ import CaseListPage from './pages/police/CaseListPage';
 import CaseDetailPage from './pages/police/CaseDetailPage';
 import AnalyticsPage from './pages/police/AnalyticsPage';
 import SuspectsPage from './pages/police/SuspectsPage';
+import CitizenTrackerPage from './pages/police/CitizenTrackerPage';
 
 export default function App() {
   return (
@@ -52,6 +53,7 @@ export default function App() {
         {/* Police Layout Protected Routes */}
         <Route path="/police" element={<PoliceLayout />}>
           <Route index element={<PoliceDashboard />} />
+          <Route path="tracking" element={<CitizenTrackerPage />} />
           <Route path="cases" element={<CaseListPage />} />
           <Route path="cases/:id" element={<CaseDetailPage />} />
           <Route path="analytics" element={<AnalyticsPage />} />

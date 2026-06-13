@@ -66,3 +66,23 @@ class LocationUpdateSchema(BaseModel):
 class DeepfakeDetectRequest(BaseModel):
     fileName: str
     fileSize: str
+
+class GirlLocationVisitSchema(BaseModel):
+    id: str
+    locationName: str
+    area: str
+    enteredAt: str
+    exitedAt: Optional[str] = None
+    durationMinutes: Optional[int] = None
+
+class MonitoredGirlSchema(BaseModel):
+    id: str
+    name: str
+    phone: str
+    latitude: float
+    longitude: float
+    status: str
+    lastSeen: str
+    avatarColor: str
+    history: List[GirlLocationVisitSchema]
+

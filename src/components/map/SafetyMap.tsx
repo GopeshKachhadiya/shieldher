@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { Users, Flame, X, Navigation } from 'lucide-react';
-import type { DangerZone, LiveIncident } from '../../data/store';
+import type { DangerZone, LiveIncident, MonitoredGirl } from '../../data/store';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 
@@ -8,6 +8,7 @@ interface SafetyMapProps {
   userCoords: { lat: number; lng: number };
   incidents: LiveIncident[];
   dangerZones: DangerZone[];
+  monitoredGirls?: MonitoredGirl[];
   showHeatmap?: boolean;
   onTeleport?: (lat: number, lng: number) => void;
   interactive?: boolean;
@@ -17,6 +18,7 @@ export default function SafetyMap({
   userCoords,
   incidents,
   dangerZones,
+  monitoredGirls = [],
   showHeatmap = false,
   onTeleport,
   interactive = true
@@ -29,6 +31,7 @@ export default function SafetyMap({
   const userMarkerRef = useRef<L.Marker | null>(null);
   const zoneCirclesRef = useRef<L.Circle[]>([]);
   const incidentMarkersRef = useRef<L.Marker[]>([]);
+  const monitoredGirlMarkersRef = useRef<L.Marker[]>([]);
   const lastCenteredCoords = useRef<{ lat: number; lng: number } | null>(null);
 
   const getRiskBorderColor = (level: number) => {
@@ -200,6 +203,88 @@ export default function SafetyMap({
       incidentMarkersRef.current.push(marker);
     });
   }, [incidents, selectedIncident, interactive]);
+
+  // Update Monitored Girls Pins
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+
+    // Clear old girl markers
+    monitoredGirlMarkersRef.current.forEach(m => m.remove());
+    monitoredGirlMarkersRef.current = [];
+
+    if (!monitoredGirls) return;
+
+    // Redraw girls
+    monitoredGirls.forEach(girl => {
+      const isWarning = girl.status === 'warning';
+      const isDanger = girl.status === 'danger';
+
+      const ringColor = isDanger 
+        ? 'bg-red-550/25 border-red-500/40' 
+        : isWarning 
+          ? 'bg-amber-500/25 border-amber-500/40' 
+          : 'bg-emerald-500/25 border-emerald-500/40';
+
+      const dotColor = isDanger 
+        ? 'bg-brand-red' 
+        : isWarning 
+          ? 'bg-amber-500' 
+          : 'bg-emerald-500';
+
+      // Get initials
+      const initials = girl.name.split(' ').map(n => n[0]).join('').slice(0, 2);
+
+      const girlIcon = L.divIcon({
+        className: 'custom-girl-marker-leaflet',
+        html: `
+          <div class="relative flex items-center justify-center" style="width: 44px; height: 44px;">
+            <div class="absolute w-10 h-10 rounded-full ${ringColor} ${isDanger ? 'animate-ping' : ''}" style="animation-duration: 2.5s;"></div>
+            <div class="relative w-8 h-8 rounded-full ${dotColor} border-2 border-[#121824] flex items-center justify-center text-[10px] font-extrabold text-[#121824] shadow-xl">
+              ${initials}
+            </div>
+          </div>
+        `,
+        iconSize: [44, 44],
+        iconAnchor: [22, 22]
+      });
+
+      const marker = L.marker([girl.latitude, girl.longitude], { icon: girlIcon }).addTo(map);
+
+      // Create a nice popup
+      const popupContent = `
+        <div style="background-color: #121824; color: #f1f5f9; padding: 10px; font-family: sans-serif; border-radius: 8px; min-width: 160px; border: 1px solid #1e293b; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.5);">
+          <h5 style="margin: 0 0 2px 0; font-size: 13px; font-weight: bold; color: #f8fafc;">${girl.name}</h5>
+          <p style="margin: 0 0 8px 0; font-size: 10px; color: #64748b; font-family: monospace;">${girl.phone}</p>
+          <div style="display: flex; align-items: center; gap: 6px; font-size: 10px; text-transform: uppercase; font-weight: 800; color: ${
+            isDanger ? '#ef4444' : isWarning ? '#f59e0b' : '#10b981'
+          }">
+            <span style="width: 8px; height: 8px; border-radius: 50%; display: inline-block; background-color: ${
+              isDanger ? '#ef4444' : isWarning ? '#f59e0b' : '#10b981'
+            }; ${isDanger ? 'animation: pulse 1s infinite alternate;' : ''}"></span>
+            ${girl.status.toUpperCase()}
+          </div>
+        </div>
+      `;
+      marker.bindPopup(popupContent, {
+        closeButton: false,
+        className: 'custom-leaflet-popup'
+      });
+
+      if (interactive) {
+        marker.on('click', (e) => {
+          L.DomEvent.stopPropagation(e);
+        });
+      }
+
+      monitoredGirlMarkersRef.current.push(marker);
+    });
+
+    return () => {
+      monitoredGirlMarkersRef.current.forEach(m => m.remove());
+      monitoredGirlMarkersRef.current = [];
+    };
+  }, [monitoredGirls, interactive]);
 
   const handleRecenter = () => {
     if (mapRef.current) {
